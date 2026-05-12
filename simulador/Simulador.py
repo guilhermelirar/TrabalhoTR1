@@ -1,7 +1,7 @@
 import numpy as np
 import matplotlib.pyplot as plt
 
-from CamadaFisica import modularNRZ_Polar
+from CamadaFisica import modularManchester, modularNRZ_Polar
 
 def plot(sinal: np.ndarray, amostras_p_bit: int) -> None:
     plt.plot(np.arange(len(sinal)), sinal)
@@ -20,7 +20,7 @@ def plot(sinal: np.ndarray, amostras_p_bit: int) -> None:
 def main():
     info = [1, 1, 0, 1]
     plot(modularNRZ_Polar(info), 100)
-
+    plot(modularManchester(info), 100)
     pass
     
 
