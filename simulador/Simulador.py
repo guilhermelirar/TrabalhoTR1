@@ -3,9 +3,13 @@ import matplotlib.pyplot as plt
 
 from CamadaFisica import modularManchester, modularNRZ_Polar
 
-def plot(sinal: np.ndarray, amostras_p_bit: int) -> None:
-    plt.plot(np.arange(len(sinal)), sinal)
-    plt.grid(True)
+def subplot(sinal: np.ndarray, amostras_p_bit: int, 
+            index: tuple[int, int, int]) -> None:
+
+    plt.subplot(index[0], index[1], index[2])
+
+    plt.step(np.arange(len(sinal)), sinal)
+    plt.grid(True, color='0.9', linestyle='--')
 
     i = 0
     while i * amostras_p_bit <= len(sinal):
@@ -14,14 +18,15 @@ def plot(sinal: np.ndarray, amostras_p_bit: int) -> None:
 
     plt.ylabel("Tensão (V)")
     plt.xlabel("Amostras")
-    plt.show()
 
 
 def main():
     info = [1, 1, 0, 1]
-    plot(modularNRZ_Polar(info), 100)
-    plot(modularManchester(info), 100)
-    pass
+    plt.figure(figsize=(10, 8))
+    subplot(modularNRZ_Polar(info), 100, index=(2,1,1))
+    subplot(modularManchester(info), 100, index=(2,1,2))
+    plt.tight_layout()
+    plt.show()
     
 
 if __name__ == "__main__":
