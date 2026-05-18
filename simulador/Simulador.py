@@ -1,7 +1,7 @@
-import numpy as np
+# simulador/Simulador.py
 import matplotlib.pyplot as plt
 
-from CamadaFisica import modularManchester, modularNRZ_Polar
+from CamadaFisica import *
 from Utils import plot
 
 
@@ -11,8 +11,11 @@ def main():
     # Testando modulações implementadas
     nrz = modularNRZ_Polar(info)
     manchester = modularManchester(info)
+    bipolar = modularBipolar(info) 
+
     plot([(nrz, "NRZ"), 
-          (manchester, "Manchester")])
+          (manchester, "Manchester"),
+          (bipolar, "Bipolar")])
     
     plt.show()
     
