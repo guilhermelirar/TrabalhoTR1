@@ -1,0 +1,38 @@
+# simulador/Utils.py
+import matplotlib.pyplot as plt
+
+from Modelos import Sinal
+
+"""
+Funções utilitárias ex: interface
+"""
+
+def plot(sinais: list[tuple[Sinal, str]]):
+    """
+    Exibe imagem com gráficos dos sinais passados como argumento, usando
+    plt.subplot.
+
+    Args:
+        sinais: lista de tuplas de objeto Sinal e string com título do subplot
+    """
+    
+    plt.figure(figsize=(10, 8))
+    nrows = len(sinais)
+
+    for i, (sinal, titulo) in enumerate(sinais):
+        # Gráfico e formatação
+        plt.subplot(nrows, 1, i+1)
+        plt.step(sinal.tempo, sinal.amostras)
+        plt.grid(True, color='0.9', linestyle='--')
+        
+        # 0 até o final do sinal a passos de amostras_p_bit
+        for x in range(0, len(sinal.amostras) + 1, sinal.amostras_p_bit):
+            plt.axvline(x, color='r', linestyle=':')
+
+        # Texto
+        plt.ylabel("Tesão (V)")
+        plt.xlabel("Amostras")
+        plt.title(titulo)
+
+    plt.tight_layout()
+
