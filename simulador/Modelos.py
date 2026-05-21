@@ -5,6 +5,7 @@ from dataclasses import dataclass
 class Sinal:
     amostras: np.ndarray
     amostras_p_bit: int 
+    is_digital: bool = False
 
     @property
     def tempo(self) -> np.ndarray:

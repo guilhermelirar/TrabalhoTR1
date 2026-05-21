@@ -25,7 +25,8 @@ def modularNRZ_Polar(bitstream: list[int], volt_high: float = 5.0,
 
     return Sinal(
             np.repeat(valores, amostras_p_bit), 
-            amostras_p_bit
+            amostras_p_bit,
+            is_digital=True
     )
 
 def modularManchester(bitstream: list[int], volt_high: float = 5.0, 
@@ -57,7 +58,8 @@ def modularManchester(bitstream: list[int], volt_high: float = 5.0,
 
     return Sinal(
         np.repeat(valores, amostras_p_bit//2),
-        amostras_p_bit
+        amostras_p_bit,
+        is_digital=True
     )
        
 
@@ -93,7 +95,8 @@ def modularBipolar(bitstream: list[int], volt_high: float = 5.0,
 
     return Sinal(
         np.repeat(niveis, amostras_p_bit),
-        amostras_p_bit
+        amostras_p_bit,
+        is_digital=True
     )
        
 def modularASK(bitstream: list[int], volt_high: float = 5.0, 
@@ -125,7 +128,8 @@ def modularASK(bitstream: list[int], volt_high: float = 5.0,
 
     return Sinal(
         np.array(niveis),
-        amostras_p_bit
+        amostras_p_bit,
+        is_digital=False
     )
        
 

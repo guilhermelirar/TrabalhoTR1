@@ -22,7 +22,12 @@ def plot(sinais: list[tuple[Sinal, str]]):
     for i, (sinal, titulo) in enumerate(sinais):
         # Gráfico e formatação
         plt.subplot(nrows, 1, i+1)
-        plt.step(sinal.tempo, sinal.amostras)
+        
+        if sinal.is_digital:
+            plt.step(sinal.tempo, sinal.amostras)
+        else:
+            plt.plot(sinal.tempo, sinal.amostras)
+        
         plt.grid(True, color='0.9', linestyle='--')
         
         # 0 até o final do sinal a passos de amostras_p_bit
