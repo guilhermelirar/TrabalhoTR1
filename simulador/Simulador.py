@@ -11,11 +11,15 @@ def main():
     # Testando modulações implementadas
     nrz = modularNRZ_Polar(info)
     manchester = modularManchester(info)
-    bipolar = modularBipolar(info) 
+    bipolar = modularBipolar(info)
+    ask = modularASK(info)
 
-    plot([(nrz, "NRZ"), 
-          (manchester, "Manchester"),
-          (bipolar, "Bipolar")])
+    plot([
+        (nrz, "NRZ"), 
+        (manchester, "Manchester"),
+        (bipolar, "Bipolar"),
+        (ask, "Amplitude Shift Keyring")
+          ])
     
     plt.show()
     
