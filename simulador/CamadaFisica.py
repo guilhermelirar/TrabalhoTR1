@@ -97,7 +97,7 @@ def modularBipolar(bitstream: list[int], volt_high: float = 5.0,
     )
        
 def modularASK(bitstream: list[int], volt_high: float = 5.0, 
-                     amostras_p_bit: int = 100) -> Sinal:
+               amostras_p_bit: int = 100, ciclos_p_bit: int = 4) -> Sinal:
     """
     Retorna objeto de Sinal com modulação por amplitude, em que 
     o sinal corresponde à uma senoide de amplitude volt_high enquanto 
@@ -113,11 +113,13 @@ def modularASK(bitstream: list[int], volt_high: float = 5.0,
     """
 
     niveis = []
+    # base de 0 a 2pi quantidade de ciclos
+    t_bit = np.linspace(0, 2 * np.pi * ciclos_p_bit, amostras_p_bit, endpoint=False)
 
     for b in bitstream:
         # senoide de A = volt_high em caso de 1 lógico, 0 cc
         if b == 1:
-            niveis.extend(volt_high * np.sin(np.arange(amostras_p_bit)))
+            niveis.extend(volt_high * np.sin(t_bit))
         else:
             niveis.extend(np.zeros(amostras_p_bit))
 
