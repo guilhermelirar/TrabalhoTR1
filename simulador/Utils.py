@@ -34,6 +34,9 @@ def plot(sinais: list[tuple[Sinal, str]]):
         for x in range(0, len(sinal.amostras) + 1, sinal.amostras_p_bit):
             plt.axvline(x, color='r', linestyle=':')
 
+        # destacar eixo x 
+        plt.axhline(0, color='black', linewidth=.8, alpha=.4)
+
         # Texto
         plt.ylabel("Tesão (V)")
         plt.xlabel("Amostras")
