@@ -18,7 +18,7 @@ def main():
         (nrz, "NRZ"), 
         (manchester, "Manchester"),
         (bipolar, "Bipolar"),
-        (ask, "Amplitude Shift Keyring")
+        (ask, "Amplitude Shift Keying")
           ])
     
     plt.show()
