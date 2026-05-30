@@ -13,12 +13,14 @@ def main():
     manchester = modularManchester(info)
     bipolar = modularBipolar(info)
     ask = modularASK(info)
+    bpsk = modularBPSK(info)
 
     plot([
         (nrz, "NRZ"), 
         (manchester, "Manchester"),
         (bipolar, "Bipolar"),
-        (ask, "Amplitude Shift Keying")
+        (ask, "Amplitude Shift Keying"),
+        (bpsk, "Binary Phase Shift Keying")
           ])
     
     plt.show()
