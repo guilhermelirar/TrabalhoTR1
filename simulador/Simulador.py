@@ -13,14 +13,16 @@ def main():
     manchester = modularManchester(info)
     bipolar = modularBipolar(info)
     ask = modularASK(info)
-    bpsk = modularBPSK(info)
+    bpsk = modularPSK(info)
+    qpsk = modularPSK(info, bits_por_simbolo=2)
 
     plot([
         (nrz, "NRZ"), 
         (manchester, "Manchester"),
         (bipolar, "Bipolar"),
         (ask, "Amplitude Shift Keying"),
-        (bpsk, "Binary Phase Shift Keying")
+        (bpsk, "Binary Phase Shift Keying"),
+        (qpsk, "Quadrature Phase Shift Keying")
           ])
     
     plt.show()

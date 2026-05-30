@@ -134,13 +134,14 @@ def modularASK(bitstream: list[int], volt_high: float = 5.0,
         is_digital=False
     )
        
-def modularBPSK(bitstream: list[int], volt_high: float = 5.0, 
-                amostras_p_bit: int = 100, ciclos_p_bit: int = 4) -> Sinal:
+
+def modularPSK(bitstream: list[int], volt_high: float = 5.0, 
+                amostras_p_bit: int = 100, ciclos_p_bit: int = 4,
+               bits_por_simbolo: int = 1) -> Sinal: 
     """
-    Retorna objeto de Sinal com modulação por Binary Phase Shift Keying, 
-    em que  o sinal corresponde à uma senoide de amplitude volt_high, com 
-    o valor 0 sendo codificado pela senoide com fase 180º e o valor 1 com 
-    0º.
+    Retorna objeto de Sinal com modulação por Phase Shift Keying, 
+    em que  o sinal corresponde à uma senoide com símbolo codificado
+    por mudança de fase.
 
     Args:
         bitstream: lista de inteiros que representam os bits do sinal 
@@ -149,22 +150,38 @@ def modularBPSK(bitstream: list[int], volt_high: float = 5.0,
         ciclos_p_bit: ciclos da senoide durante representação de 1 bit
 
     Returns:
-        Sinal: objeto sinal com as amostras moduladas para BPSK. Com 1 -> 0º
-        e 0 -> 180º
+        Sinal: objeto sinal com as amostras moduladas para PSK. 
 
     """
-    
+   
+    tabela_psk = {
+            (1,): (1.0, 0.),
+            (0,): (-1.0, 0.),
+            (0, 0): (-1., -1.),
+            (0, 1): (1., -1.),
+            (1, 0): (-1., 1.),
+            (1, 1): (1., 1.),
+            }
+
     niveis = []
     # base de 0 a 2pi quantidade de ciclos
-    t_bit = np.linspace(0, 2 * np.pi * ciclos_p_bit, amostras_p_bit, 
+    t_simbolo = np.linspace(0, 2 * np.pi * ciclos_p_bit, 
+                            amostras_p_bit * bits_por_simbolo, 
                         endpoint=False)
+   
     
-    for b in bitstream:
-        # Canal I (cos)
-        niveis.extend(np.cos(t_bit) if b == 1 else -np.cos(t_bit))
-        
-        # Canal Q = nulo (sin 0 = sin PI = 0)
+    for i in range(0, len(bitstream), bits_por_simbolo):
+        # informação que será convertida em 1 símbolo
+        bits = bitstream[i:(i+bits_por_simbolo)]
+        bits = tuple(bits)
 
+        coordenadas = tabela_psk[bits]
+
+        # cos
+        canal_i = volt_high*np.cos(t_simbolo) * coordenadas[0]
+        canal_q = -volt_high*np.sin(t_simbolo) * coordenadas[1]
+
+        niveis.extend(canal_i + canal_q)
         
     return Sinal(
             np.array(niveis),
