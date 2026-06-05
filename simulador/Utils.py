@@ -38,7 +38,7 @@ def plot(sinais: list[tuple[Sinal, str]]):
         plt.axhline(0, color='black', linewidth=.8, alpha=.4)
 
         # Texto
-        plt.ylabel("Tesão (V)")
+        plt.ylabel("Tensão (V)")
         plt.xlabel("Amostras")
         plt.title(titulo)
 
