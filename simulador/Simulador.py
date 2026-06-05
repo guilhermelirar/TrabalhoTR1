@@ -21,6 +21,7 @@ def main():
     manchester = modularManchester(info)
     bipolar = modularBipolar(info)
     ask = modularASK(info)
+    fsk = modularFSK(info)
     bpsk = modularPSK(info)
     qpsk = modularPSK(info, bits_por_simbolo=2)
     qam = modular16QAM(bitstream_teste_qam)
@@ -30,6 +31,7 @@ def main():
         (manchester, "Manchester"),
         (bipolar, "Bipolar"),
         (ask, "Amplitude Shift Keying"),
+        (fsk, "Frequency Shift Keying"),
         (bpsk, "Binary Phase Shift Keying"),
         (qpsk, "Quadrature Phase Shift Keying"),
         (qam, "16-QAM")

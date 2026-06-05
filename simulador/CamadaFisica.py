@@ -109,12 +109,12 @@ def modularASK(bitstream: list[int], volt_high: float = 5.0,
 
     Args:
         bitstream: lista de inteiros que representam os bits do sinal 
-        volt_high: máximo de energia do sinal (1 lógico de índice par) 
+        volt_high: máximo de energia do sinal
         amostras_p_bit: quantidade de amostras para representar um único bit
         ciclos_p_bit: número de ciclos da onda por bit
 
     Returns:
-        Sinal: objeto sinal com as amostras moduladas para Bipolar
+        Sinal: objeto sinal com as amostras moduladas para ASK
     """
 
     niveis = []
@@ -146,7 +146,7 @@ def modularPSK(bitstream: list[int], volt_high: float = 5.0,
 
     Args:
         bitstream: lista de inteiros que representam os bits do sinal 
-        volt_high: máximo de energia do sinal (1 lógico de índice par) 
+        volt_high: máximo de energia do sinal
         amostras_p_bit: quantidade de amostras para representar um único bit
         ciclos_p_bit: ciclos da senoide durante representação de 1 bit
 
@@ -200,7 +200,7 @@ def modular16QAM(bitstream: list[int], volt_high: float = 5.0,
 
     Args:
         bitstream: lista de inteiros que representam os bits do sinal 
-        volt_high: máximo de energia do sinal (1 lógico de índice par) 
+        volt_high: máximo de energia do sinal
         amostras_p_bit: quantidade de amostras para representar um único bit
         ciclos_p_bit: ciclos da senoide durante representação de 1 bit
 
@@ -241,3 +241,41 @@ def modular16QAM(bitstream: list[int], volt_high: float = 5.0,
             amostras_p_bit, 
             is_digital=False
             )
+
+
+def modularFSK(bitstream: list[int], volt_high: float = 5.0, 
+               amostras_p_bit: int = 100,
+               freq1: float = 4., freq2: float = 8.,) -> Sinal:
+    """
+    Retorna objeto de Sinal com modulação por frequência 
+
+    Args:
+        bitstream: lista de inteiros que representam os bits do sinal 
+        volt_high: máximo de energia do sinal 
+        amostras_p_bit: quantidade de amostras para representar um único bit
+        freq1: frequência do símbolo 0
+        freq2: frequência do símbolo 1
+
+    Returns:
+        Sinal: objeto sinal com as amostras moduladas para FSK
+    """
+
+    niveis = []
+    # base de 0 a 2pi quantidade de ciclos
+    t_bit_1 = np.linspace(0, 2 * np.pi * freq2, amostras_p_bit, 
+                        endpoint=False)
+    t_bit_0 = np.linspace(0, 2 * np.pi * freq1, amostras_p_bit, 
+                        endpoint=False)
+    for b in bitstream:
+        # senoide de A = volt_high em caso de 1 lógico, 0 cc
+        if b == 1:
+            niveis.extend(volt_high * np.sin(t_bit_1))
+        else:
+            niveis.extend(volt_high * np.sin(t_bit_0))
+
+    return Sinal(
+        np.array(niveis),
+        amostras_p_bit,
+        is_digital=False
+    )
+
