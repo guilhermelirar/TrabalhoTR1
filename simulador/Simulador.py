@@ -8,6 +8,14 @@ from Utils import plot
 def main():
     info = [1, 1, 0, 1]
 
+    #bitstreams de teste
+    bitstream_teste_qam = [
+    0, 0, 0, 0,  # Menor amplitude possível (Centro) -> Pico em ~2.35V
+    0, 0, 1, 0,  # Amplitude média-baixa
+    0, 0, 0, 1,  # Amplitude média-alta
+    0, 0, 1, 1   # Maior amplitude possível (Borda)  -> Pico em 5.0V
+    ]
+
     # Testando modulações implementadas
     nrz = modularNRZ_Polar(info)
     manchester = modularManchester(info)
@@ -15,6 +23,7 @@ def main():
     ask = modularASK(info)
     bpsk = modularPSK(info)
     qpsk = modularPSK(info, bits_por_simbolo=2)
+    qam = modular16QAM(bitstream_teste_qam)
 
     plot([
         (nrz, "NRZ"), 
@@ -22,7 +31,8 @@ def main():
         (bipolar, "Bipolar"),
         (ask, "Amplitude Shift Keying"),
         (bpsk, "Binary Phase Shift Keying"),
-        (qpsk, "Quadrature Phase Shift Keying")
+        (qpsk, "Quadrature Phase Shift Keying"),
+        (qam, "16-QAM")
           ])
     
     plt.show()
