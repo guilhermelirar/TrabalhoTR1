@@ -1,11 +1,12 @@
 # simulador/Simulador.py
 import matplotlib.pyplot as plt
 
-from CamadaFisica import *
+from tx.CamadaFisica import *
 from Utils import plot
 
 
-def main():
+
+def testa():
     info = [1, 1, 0, 1]
 
     #bitstreams de teste
@@ -26,8 +27,8 @@ def main():
     qpsk = modularPSK(info, bits_por_simbolo=2)
     qam = modular16QAM(bitstream_teste_qam)
 
-    plot([
-        (nrz, "NRZ"), 
+    nrz_plot = (nrz, "NRZ") 
+    plots = [
         (manchester, "Manchester"),
         (bipolar, "Bipolar"),
         (ask, "Amplitude Shift Keying"),
@@ -35,10 +36,15 @@ def main():
         (bpsk, "Binary Phase Shift Keying"),
         (qpsk, "Quadrature Phase Shift Keying"),
         (qam, "16-QAM")
-          ])
+          ]
+
+    for p in plots:
+        plot([nrz_plot, p])
+        plt.show()
     
-    plt.show()
-    
+
+def main():
+    testa()
 
 if __name__ == "__main__":
     main()
