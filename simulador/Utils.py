@@ -1,7 +1,7 @@
 # simulador/Utils.py
 import matplotlib.pyplot as plt
 
-from Modelos import Sinal
+from modelos.Sinal import Sinal
 
 """
 Funções utilitárias ex: interface

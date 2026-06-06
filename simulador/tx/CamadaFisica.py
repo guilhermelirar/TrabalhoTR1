@@ -1,7 +1,7 @@
 import numpy as np
 from math import sqrt
 
-from Modelos import Sinal
+from modelos.Sinal import Sinal
 
 def modularNRZ_Polar(bitstream: list[int], volt_high: float = 5.0, 
                      volt_low: float = -5.0, 
