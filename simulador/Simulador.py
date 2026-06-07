@@ -3,7 +3,7 @@ import matplotlib.pyplot as plt
 
 from tx.CamadaFisica import *
 from Utils import plot
-
+from modelos.Sinal import Sinal
 
 
 def testa():
@@ -43,8 +43,33 @@ def testa():
         plt.show()
     
 
+def testa_ruido():
+    from modelos.Canal import Canal
+    canal = Canal()
+    info = [1, 1, 0, 0, 1, 0, 0, 1]
+    #sinal = modularNRZ_Polar(info)
+    #sinal = modularFSK(info)
+    sinal = modularPSK(info, bits_por_simbolo=2)
+    #sinal = modular16QAM(info)
+
+    canal.put(sinal)
+    amostras_ruidoso: list[float] = []
+    while not canal.empty():
+        amostras_ruidoso.extend(canal.get())
+
+    sinal_ruidoso = Sinal(np.array(amostras_ruidoso), sinal.amostras_p_bit)
+
+    plot([(sinal, "Sinal Original 11001001"),
+         (sinal_ruidoso, "Sinal Ruidoso")])
+
+    plt.show()
+
+    pass
+
 def main():
-    testa()
+    # testa()
+    testa_ruido()
+    pass
 
 if __name__ == "__main__":
     main()
