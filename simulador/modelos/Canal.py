@@ -9,14 +9,16 @@ class Canal:
     desvio_ruido: float
     media_ruido: float
 
+    def _ruido(self, size):
+        return self.rng.normal(loc=self.media_ruido, 
+                                scale=self.desvio_ruido, 
+                                size = size)
+
     def put(self, sinal: Sinal):
         for i in range(0, len(sinal.amostras), sinal.amostras_p_bit):
             niveis = sinal.amostras[i:(i+sinal.amostras_p_bit)]
-            ruido = self.rng.normal(loc=self.media_ruido, 
-                                scale=self.desvio_ruido, 
-                                size = len(niveis))
 
-            sinal_ruidoso = ruido + niveis
+            sinal_ruidoso = self._ruido(len(niveis)) + niveis
             self.buffer.put(sinal_ruidoso)
 
     def empty(self):

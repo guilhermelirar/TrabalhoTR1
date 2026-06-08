@@ -15,8 +15,8 @@ def tx():
 
 def main():
     threads = (
-            threading.Thread(target=rx()),
-            threading.Thread(target=tx())
+            threading.Thread(target=rx),
+            threading.Thread(target=tx)
             )
 
     for t in threads:
