@@ -6,6 +6,8 @@ matplotlib==3.10.9
 numpy==2.4.4
 packaging==26.2
 pillow==12.2.0
+pycairo==1.29.0
+PyGObject==3.56.3
 pyparsing==3.3.2
 python-dateutil==2.9.0.post0
 six==1.17.0
