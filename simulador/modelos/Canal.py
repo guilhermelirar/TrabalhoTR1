@@ -1,7 +1,6 @@
 #./simulador/modelos/Canal.py
 
 from queue import Queue
-from random import gauss
 from modelos.Sinal import Sinal
 import numpy as np
 
