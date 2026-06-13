@@ -29,29 +29,17 @@ class JanelaSimulador(Gtk.Window):
         self._setup_main_box()
         self.sim_conf = Config()
 
-    def _setup_main_box(self):
-        main_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=6)
-        self.add(main_box)
 
+    def _setup_caixa_mensagem(self, box):
         lbl_txt = Gtk.Label(label="Mensagem para transmitir:")
         lbl_txt.set_halign(Gtk.Align.START)
-        main_box.pack_start(lbl_txt, False, False, 0)
+        box.pack_start(lbl_txt, False, False, 0)
 
         self.campo_msg = Gtk.Entry()
         self.campo_msg.set_text("Ola Mundo")
-        main_box.pack_start(self.campo_msg, False, False, 0)
+        box.pack_start(self.campo_msg, False, False, 0)
 
-        self.botao_sim = Gtk.Button(label="Iniciar simulação")
-        self.botao_sim.connect("clicked", self.iniciar_simulacao)
-        main_box.pack_start(self.botao_sim, False, False, 0)
-
-        main_box.pack_start(
-            Gtk.Separator(orientation=Gtk.Orientation.HORIZONTAL),
-            False,
-            False,
-            10,
-        )
-
+    def _setup_combobox(self, box):
         opcoes_menus = {
             "Tipo de Enquadramento": [
                 "Contagem de Caracteres",
@@ -82,9 +70,10 @@ class JanelaSimulador(Gtk.Window):
 
             combo.set_active(0)
 
-            main_box.pack_start(lbl, False, False, 0)
-            main_box.pack_start(combo, False, False, 0)
+            box.pack_start(lbl, False, False, 0)
+            box.pack_start(combo, False, False, 0)
 
+    def _setup_spinbutton(self, box):
         campos_numericos = {
             "Tamanho Máximo do Quadro": (1024, 64, 4096, 64),
             "Desvio Padrão do Ruído (σ)": (0.5, 0.0, 5.0, 0.1),
@@ -126,9 +115,29 @@ class JanelaSimulador(Gtk.Window):
                     bloco_propriedade, True, True, 0
                 )
             else:
-                main_box.pack_start(bloco_propriedade, False, False, 0)
+                box.pack_start(bloco_propriedade, False, False, 0)
 
-        main_box.pack_start(caixa_ruido_lado_a_lado, False, False, 0)
+        box.pack_start(caixa_ruido_lado_a_lado, False, False, 0)
+
+    def _setup_main_box(self):
+        main_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=6)
+        self.add(main_box)
+        
+        self._setup_caixa_mensagem(main_box)
+        self._setup_combobox(main_box)
+        self._setup_spinbutton(main_box)
+
+        main_box.pack_start(
+            Gtk.Separator(orientation=Gtk.Orientation.HORIZONTAL),
+            False,
+            False,
+            10,
+        )
+
+        self.botao_sim = Gtk.Button(label="Iniciar simulação")
+        self.botao_sim.connect("clicked", self.iniciar_simulacao)
+        main_box.pack_start(self.botao_sim, False, False, 0)
+
 
     def iniciar_simulacao(self, botao):
         print(f"Simulação iniciada {botao.get_label()}")
