@@ -72,6 +72,28 @@ class JanelaSimulador(Gtk.Window):
             main_box.pack_start(lbl, False, False, 0)
             main_box.pack_start(combo, False, False, 0)
 
+        campos_numericos = {
+            "Tamanho Máximo do Quadro": (1024, 64, 4096, 64),
+            "Desvio Padrão do Ruído (σ)": (0.5, 0.0, 5.0, 0.1)
+        }
+
+        for titulo, (inicial, minimo, 
+                     maximo, passo) in campos_numericos.items():
+            lbl = Gtk.Label(label=titulo, halign=Gtk.Align.START)
+            main_box.pack_start(lbl, False, False, 0)
+            
+            ajuste = Gtk.Adjustment(value=inicial, 
+                                    lower=minimo, 
+                                    upper=maximo, 
+                                    step_increment=passo)
+
+            seletor_num = Gtk.SpinButton(adjustment=ajuste, 
+                                         digits=1 
+                                         if type(inicial) == float 
+                                         else 0)
+
+            main_box.pack_start(seletor_num, False, False, 0)
+
     def iniciar_simulacao(self, botao):
         print(f"Simulação iniciada {botao.get_label()}")
 
