@@ -1,4 +1,3 @@
-# simulador/Simulador.py
 import matplotlib.pyplot as plt
 import threading
 
@@ -8,30 +7,47 @@ from Utils import plot
 from modelos.Sinal import Sinal
 from modelos.Canal import Canal
 
+from concurrent.futures import ThreadPoolExecutor
+from gi.repository import GLib
 
-def rx(canal: Canal):
+def tx(canal: Canal, msg, shutdown_event: threading.Event, historico: dict):
+    bitstream_exemplo = [1, 0, 1, 1, 0, 0, 1, 0] 
+    
+    objeto_sinal = tx_cf.modularASK(bitstream_exemplo)
+    
+    amostras_puras = objeto_sinal.amostras.tolist() 
+    historico["sinal_tx"] = amostras_puras[:200]
+
+    if not shutdown_event.is_set():
+        canal.put(objeto_sinal)
+        canal.buffer.put(None) # Sinaliza o fim da transmissão
+
+def rx(canal: Canal, shutdown_event: threading.Event, historico: dict, callback_fim):
     niveis = []
 
-    while True:
-        data = canal.get()
+    while not shutdown_event.is_set():
+        try:
+            data = canal.buffer.get(timeout=0.1)
+            
+            if data is None:
+                break
+                
+            niveis.extend(data)
+        except:
+            continue
 
-        if data is None:
-            break
-        niveis.extend(data)
+    historico["sinal_canal"] = niveis[:1000]
+    historico["mensagem_final"] = "Mensagem Decodificada com Sucesso"
 
-def tx(canal: Canal, msg):
-    sinal = tx_cf.modularASK(msg)
-    canal.put(sinal)
-    canal.buffer.put(None)
-    pass
+    # Avisa a interface gráfica para atualizar a tela e desenhar o gráfico
+    from gi.repository import GLib
+    GLib.idle_add(callback_fim)
 
 def main():
     canal = Canal()
+    pool = ThreadPoolExecutor(max_workers=2)
 
-    rx_t = threading.Thread(target=rx, args=(canal, ))
-    tx_t = threading.Thread(target=tx, args=(canal, [1,1,0,1]))
-
-    janela = JanelaSimulador(canal, tx_t, rx_t)
+    janela = JanelaSimulador(canal, tx, rx, pool)
     janela.start()
 
 if __name__ == "__main__": 

@@ -1,6 +1,9 @@
 # simulador/Interface.py
 import threading
 import gi
+import matplotlib.pyplot as plt
+from matplotlib.backends.backend_gtk3agg \
+        import FigureCanvasGTK3Agg as FigureCanvas
 
 gi.require_version("Gtk", "3.0")
 from gi.repository import GLib, Gtk
@@ -12,9 +15,7 @@ from modelos.Config import Config
 
 class JanelaSimulador(Gtk.Window):
 
-    def __init__(
-        self, canal: Canal, tx: threading.Thread, rx: threading.Thread
-    ):
+    def __init__(self, canal: Canal, tx, rx, pool):
         super().__init__(title="Simulador de Camada Física e Enlace")
         self.set_default_size(400, 300)
         self.set_border_width(10)
@@ -22,13 +23,31 @@ class JanelaSimulador(Gtk.Window):
         self.canal = canal
         self.rx = rx
         self.tx = tx
+        self.pool = pool
 
         self.combos = {}
         self.seletores = {}
 
         self._setup_main_box()
         self.sim_conf = Config()
+        self.shutdown_event = threading.Event()
 
+        # 1. Cria a figura e os eixos padrão do Matplotlib
+        self.fig, self.ax = plt.subplots()
+        self.ax.set_title("Sinal Elétrico no Canal")
+        self.ax.set_xlabel("Amostras")
+        self.ax.set_ylabel("Tensão (V)")
+        self.ax.grid(True)
+
+ 
+        self.linha_sinal, = self.ax.plot([], [], label="Sinal", color="blue")
+        self.ax.legend()
+
+        self.canvas = FigureCanvas(self.fig)
+        self.canvas.set_size_request(400, 300)
+        main_box = self.get_child()
+        main_box.pack_start(self.canvas, True, True, 0)
+        # -----------------------------------------------------
 
     def _setup_caixa_mensagem(self, box):
         lbl_txt = Gtk.Label(label="Mensagem para transmitir:")
@@ -142,20 +161,54 @@ class JanelaSimulador(Gtk.Window):
     def iniciar_simulacao(self, botao):
         print(f"Simulação iniciada {botao.get_label()}")
 
-        # exemplo p acessar valores
         msg = self.campo_msg.get_text()
         enq = self.combos["Tipo de Enquadramento"].get_active_text()
         mod = self.combos["Modulação"].get_active_text()
 
         tam_item = self.seletores["Tamanho Máximo do Quadro"].get_value()
         tam_quadro = int(tam_item)
-        ruido_sigma = self.seletores["Desvio Padrão do Ruído (σ)"].\
-                get_value()
+        ruido_sigma = self.seletores["Desvio Padrão do Ruído (σ)"]\
+                .get_value()
+        ruido_media = self.seletores["Média do Ruído"].get_value()
+        
+        self.canal.desvio_ruido = ruido_sigma
+        self.canal.media_ruido = ruido_media        
+        self.shutdown_event.set()
+        
+        while not self.canal.empty():
+            self.canal.get()
 
-        print(f"Mensagem lida: {msg}")
-        print(f"Modulação lida: {mod}")
-        print(f"Configuração lida: {enq}, Quadro: "
-        f"{tam_quadro}, σ: {ruido_sigma}")
+        self.shutdown_event.clear()
+
+        self.historico = {
+            "sinal_tx": [],
+            "sinal_canal": [],
+            "mensagem_final": ""
+        }
+
+        self.pool.submit(self.tx, self.canal, msg, self.shutdown_event, self.historico)
+        self.pool.submit(self.rx, self.canal, self.shutdown_event, self.historico, self.finalizar_simulacao)
+
+    def finalizar_simulacao(self):
+        """Este método é chamado automaticamente assim que
+        o RX termina de processar"""
+        dados_grafico = self.historico.get("sinal_canal", [])
+        msg_recebida = self.historico.get("mensagem_final", "")
+
+        x = range(len(dados_grafico))
+        self.linha_sinal.set_data(x, dados_grafico)
+
+        if dados_grafico:
+            self.ax.set_xlim(0, len(dados_grafico))
+            self.ax.set_ylim(min(dados_grafico) - 0.5, max(dados_grafico) 
+                             + 0.5)
+        
+        self.canvas.draw()
+
+        print(f"Gráfico atualizado com {len(dados_grafico)} amostras.")
+        print(f"Interface recebeu o texto final: {msg_recebida}")
+        
+        return False
 
     def start(self):
         self.connect("destroy", Gtk.main_quit)
