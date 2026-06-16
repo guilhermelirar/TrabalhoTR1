@@ -4,10 +4,9 @@ from gi.repository import GLib
 import numpy as np
 
 from Interface import JanelaSimulador  
+from tx.Tx import Tx
 from tx import CamadaFisica as tx_cf
 from modelos.Canal import Canal
-
-# --- FUNÇÕES DE OPERAÇÃO OPERÁRIA (THREADS) ---
 
 def tx_worker(canal: Canal, msg: str, modulação: str, 
               shutdown_event: threading.Event, historico: dict):
@@ -42,7 +41,7 @@ def rx_worker(canal: Canal, shutdown_event: threading.Event, historico: dict, ca
         except:
             continue
 
-    historico["sinal_canal"] = niveis[:200]
+    historico["sinal_canal"] = niveis[:1000]
     historico["mensagem_final"] = "Mensagem Decodificada com Sucesso"
 
     GLib.idle_add(callback_fim, historico)
@@ -61,6 +60,8 @@ class Simulador:
 
         self.win = JanelaSimulador()
         self.win.set_iniciar_sim(self.iniciar_sim)
+        
+        self.tx = Tx(self.canal, self.shutdown_event)
         self.win.start()
 
     def iniciar_sim(self, config: dict):
@@ -81,11 +82,9 @@ class Simulador:
         self.historico["mensagem_final"] = ""
 
         self.pool.submit(
-            tx_worker, 
-            self.canal, 
+            self.tx.transmitir, 
             config.get("mensagem", "Ola Mundo"), 
             config.get("modulacao", "ASK"),
-            self.shutdown_event, 
             self.historico
         )
         
@@ -94,7 +93,8 @@ class Simulador:
             self.canal, 
             self.shutdown_event, 
             self.historico, 
-            self.win.finalizar_simulacao)
+            self.win.finalizar_simulacao
+        )
 
-if __name__ == "__main__": 
+if __name__ == "__main__":
     Simulador()
