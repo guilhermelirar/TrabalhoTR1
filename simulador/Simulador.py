@@ -33,7 +33,7 @@ def rx_worker(canal: Canal, shutdown_event: threading.Event, historico: dict, ca
             
             if data is None:
                 break
-                
+                    
             if isinstance(data, np.ndarray):
                 niveis.extend(data.tolist())
             else:
