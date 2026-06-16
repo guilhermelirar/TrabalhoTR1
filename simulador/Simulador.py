@@ -1,28 +1,31 @@
-import matplotlib.pyplot as plt
 import threading
+from concurrent.futures import ThreadPoolExecutor
+from gi.repository import GLib
+import numpy as np
 
 from Interface import JanelaSimulador  
 from tx import CamadaFisica as tx_cf
-from Utils import plot
-from modelos.Sinal import Sinal
 from modelos.Canal import Canal
 
-from concurrent.futures import ThreadPoolExecutor
-from gi.repository import GLib
+# --- FUNÇÕES DE OPERAÇÃO OPERÁRIA (THREADS) ---
 
-def tx(canal: Canal, msg, shutdown_event: threading.Event, historico: dict):
+def tx_worker(canal: Canal, msg: str, modulação: str, 
+              shutdown_event: threading.Event, historico: dict):
     bitstream_exemplo = [1, 0, 1, 1, 0, 0, 1, 0] 
     
     objeto_sinal = tx_cf.modularASK(bitstream_exemplo)
     
-    amostras_puras = objeto_sinal.amostras.tolist() 
-    historico["sinal_tx"] = amostras_puras[:200]
+    historico["sinal_tx"] = objeto_sinal.amostras.tolist()[:1000]
 
     if not shutdown_event.is_set():
-        canal.put(objeto_sinal)
-        canal.buffer.put(None) # Sinaliza o fim da transmissão
+        try:
+            canal.put(objeto_sinal)
+        except Exception as e:
+            print(f"Erro no canal.put: {e}")
+        
+        canal.buffer.put(None)
 
-def rx(canal: Canal, shutdown_event: threading.Event, historico: dict, callback_fim):
+def rx_worker(canal: Canal, shutdown_event: threading.Event, historico: dict, callback_fim):
     niveis = []
 
     while not shutdown_event.is_set():
@@ -32,23 +35,66 @@ def rx(canal: Canal, shutdown_event: threading.Event, historico: dict, callback_
             if data is None:
                 break
                 
-            niveis.extend(data)
+            if isinstance(data, np.ndarray):
+                niveis.extend(data.tolist())
+            else:
+                niveis.extend(data)
         except:
             continue
 
-    historico["sinal_canal"] = niveis[:1000]
+    historico["sinal_canal"] = niveis[:200]
     historico["mensagem_final"] = "Mensagem Decodificada com Sucesso"
 
-    # Avisa a interface gráfica para atualizar a tela e desenhar o gráfico
-    from gi.repository import GLib
-    GLib.idle_add(callback_fim)
+    GLib.idle_add(callback_fim, historico)
 
-def main():
-    canal = Canal()
-    pool = ThreadPoolExecutor(max_workers=2)
+class Simulador:
+    def __init__(self) -> None:
+        self.canal = Canal()
+        self.pool = ThreadPoolExecutor(max_workers=2)
+        self.shutdown_event = threading.Event()
+        
+        self.historico = {
+            "sinal_tx": [],
+            "sinal_canal": [],
+            "mensagem_final": ""
+        }
 
-    janela = JanelaSimulador(canal, tx, rx, pool)
-    janela.start()
+        self.win = JanelaSimulador()
+        self.win.set_iniciar_sim(self.iniciar_sim)
+        self.win.start()
+
+    def iniciar_sim(self, config: dict):
+        print("Simulação iniciada com as configurações:", config)
+
+        self.shutdown_event.set()
+        
+        while not self.canal.empty():
+            self.canal.get()
+
+        self.shutdown_event.clear()
+
+        self.canal.desvio_ruido = config.get("ruido_sigma", 0.5)
+        self.canal.media_ruido = config.get("ruido_media", 0.0)
+
+        self.historico["sinal_tx"] = []
+        self.historico["sinal_canal"] = []
+        self.historico["mensagem_final"] = ""
+
+        self.pool.submit(
+            tx_worker, 
+            self.canal, 
+            config.get("mensagem", "Ola Mundo"), 
+            config.get("modulacao", "ASK"),
+            self.shutdown_event, 
+            self.historico
+        )
+        
+        self.pool.submit(
+            rx_worker, 
+            self.canal, 
+            self.shutdown_event, 
+            self.historico, 
+            self.win.finalizar_simulacao)
 
 if __name__ == "__main__": 
-    main()
+    Simulador()

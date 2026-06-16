@@ -8,38 +8,28 @@ from matplotlib.backends.backend_gtk3agg \
 gi.require_version("Gtk", "3.0")
 from gi.repository import GLib, Gtk
 
-# Apenas para manter as tipagens do seu construtor válidas
 from modelos.Canal import Canal
 from modelos.Config import Config
 
 
 class JanelaSimulador(Gtk.Window):
 
-    def __init__(self, canal: Canal, tx, rx, pool):
+    def __init__(self):
         super().__init__(title="Simulador de Camada Física e Enlace")
         self.set_default_size(400, 300)
         self.set_border_width(10)
-
-        self.canal = canal
-        self.rx = rx
-        self.tx = tx
-        self.pool = pool
 
         self.combos = {}
         self.seletores = {}
 
         self._setup_main_box()
-        self.sim_conf = Config()
-        self.shutdown_event = threading.Event()
 
-        # 1. Cria a figura e os eixos padrão do Matplotlib
         self.fig, self.ax = plt.subplots()
         self.ax.set_title("Sinal Elétrico no Canal")
         self.ax.set_xlabel("Amostras")
         self.ax.set_ylabel("Tensão (V)")
         self.ax.grid(True)
 
- 
         self.linha_sinal, = self.ax.plot([], [], label="Sinal", color="blue")
         self.ax.legend()
 
@@ -154,54 +144,47 @@ class JanelaSimulador(Gtk.Window):
         )
 
         self.botao_sim = Gtk.Button(label="Iniciar simulação")
-        self.botao_sim.connect("clicked", self.iniciar_simulacao)
+        self.botao_sim.connect("clicked", self.iniciar_simulacao) 
         main_box.pack_start(self.botao_sim, False, False, 0)
 
+    def set_iniciar_sim(self, funcao_callback):
+        """Guarda a função iniciar_sim do simulador aqui dentro"""
+        self.callback_simulador = funcao_callback
 
     def iniciar_simulacao(self, botao):
-        print(f"Simulação iniciada {botao.get_label()}")
+        config = {
+            "mensagem": self.campo_msg.get_text(),
 
-        msg = self.campo_msg.get_text()
-        enq = self.combos["Tipo de Enquadramento"].get_active_text()
-        mod = self.combos["Modulação"].get_active_text()
+            "enquadramento": self.combos["Tipo de Enquadramento"]\
+                    .get_active_text(),
 
-        tam_item = self.seletores["Tamanho Máximo do Quadro"].get_value()
-        tam_quadro = int(tam_item)
-        ruido_sigma = self.seletores["Desvio Padrão do Ruído (σ)"]\
-                .get_value()
-        ruido_media = self.seletores["Média do Ruído"].get_value()
-        
-        self.canal.desvio_ruido = ruido_sigma
-        self.canal.media_ruido = ruido_media        
-        self.shutdown_event.set()
-        
-        while not self.canal.empty():
-            self.canal.get()
+            "modulacao": self.combos["Modulação"]\
+                    .get_active_text(),
 
-        self.shutdown_event.clear()
+            "tam_quadro": int(self.seletores["Tamanho Máximo do Quadro"]\
+                    .get_value()),
 
-        self.historico = {
-            "sinal_tx": [],
-            "sinal_canal": [],
-            "mensagem_final": ""
+            "ruido_sigma": self.seletores["Desvio Padrão do Ruído (σ)"]\
+                    .get_value(),
+
+            "ruido_media": self.seletores["Média do Ruído"].get_value(),
         }
+        
+        if hasattr(self, 'callback_simulador'):
+            self.callback_simulador(config)
 
-        self.pool.submit(self.tx, self.canal, msg, self.shutdown_event, self.historico)
-        self.pool.submit(self.rx, self.canal, self.shutdown_event, self.historico, self.finalizar_simulacao)
-
-    def finalizar_simulacao(self):
-        """Este método é chamado automaticamente assim que
-        o RX termina de processar"""
-        dados_grafico = self.historico.get("sinal_canal", [])
-        msg_recebida = self.historico.get("mensagem_final", "")
+    def finalizar_simulacao(self, historico: dict):
+        """Este método recebe o histórico do Simulador e atualiza a tela"""
+        dados_grafico = historico.get("sinal_canal", [])
+        msg_recebida = historico.get("mensagem_final", "")
 
         x = range(len(dados_grafico))
         self.linha_sinal.set_data(x, dados_grafico)
 
         if dados_grafico:
             self.ax.set_xlim(0, len(dados_grafico))
-            self.ax.set_ylim(min(dados_grafico) - 0.5, max(dados_grafico) 
-                             + 0.5)
+            self.ax.set_ylim(min(dados_grafico) - 
+                             0.5, max(dados_grafico) + 0.5)
         
         self.canvas.draw()
 
