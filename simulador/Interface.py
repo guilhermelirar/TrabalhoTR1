@@ -119,27 +119,35 @@ class JanelaSimulador(Gtk.Window):
         main_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=6)
         self.add(main_box)
 
-        nb = Gtk.Notebook()
-        main_box.pack_start(nb, True, True, 0)
+        # ---- área de configuração ---- #
+        left_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=6)
 
-        cfg_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=6)
-        nb.append_page(cfg_box, Gtk.Label(label="Configurações"))
+        self._setup_caixa_mensagem(left_box)
+        self._setup_combobox(left_box)
+        self._setup_spinbutton(left_box)
 
-        self._setup_caixa_mensagem(cfg_box)
-        self._setup_combobox(cfg_box)
-        self._setup_spinbutton(cfg_box)
+        self.botao_sim = Gtk.Button(label="Iniciar simulação")
+        self.botao_sim.connect("clicked", self.iniciar_simulacao) 
+        left_box.pack_start(self.botao_sim, False, False, 0)
 
-        cfg_box.pack_start(
+        # ---- separador visual ---- #
+        left_box.pack_start(
             Gtk.Separator(orientation=Gtk.Orientation.HORIZONTAL),
             False,
             False,
             10,
         )
 
-        self.botao_sim = Gtk.Button(label="Iniciar simulação")
-        self.botao_sim.connect("clicked", self.iniciar_simulacao) 
-        cfg_box.pack_start(self.botao_sim, False, False, 0)
+        # ---- aba de relatório do TX-RX ---- #
+        tx_report = Gtk.TextView()
+        tx_report.set_editable(False)
+        scroll_win = Gtk.ScrolledWindow()
+        scroll_win.add(tx_report)
+        # --- #
 
+        left_box.pack_start(scroll_win, False, False, 0)
+
+        # ---- Canvas ----  #
         self.fig, self.ax = plt.subplots()
         self.ax.set_title("Sinal Elétrico no Canal")
         self.ax.set_xlabel("Amostras")
@@ -152,6 +160,8 @@ class JanelaSimulador(Gtk.Window):
         self.canvas = FigureCanvas(self.fig)
         self.canvas.set_size_request(400, 300)
 
+        # --- colocando na main_box ---- #
+        main_box.pack_start(left_box, False, False, 0) # não expande
         main_box.pack_start(self.canvas, True, True, 0)
 
     def set_iniciar_sim(self, funcao_callback):
