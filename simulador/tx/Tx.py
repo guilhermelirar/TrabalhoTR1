@@ -14,6 +14,7 @@ class Tx:
                 "Bipolar": tx_cf.modularBipolar,
                 "ASK": tx_cf.modularASK,
                 "FSK": tx_cf.modularFSK,
+                "16-QAM": tx_cf.modular16QAM
                 }
 
         modulador_fn = moduladores.get(modulacao, None)
