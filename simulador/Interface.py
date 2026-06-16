@@ -148,14 +148,28 @@ class JanelaSimulador(Gtk.Window):
         left_box.pack_start(scroll_win, False, False, 0)
 
         # ---- Canvas ----  #
-        self.fig, self.ax = plt.subplots()
-        self.ax.set_title("Sinal Elétrico no Canal")
-        self.ax.set_xlabel("Amostras")
-        self.ax.set_ylabel("Tensão (V)")
-        self.ax.grid(True)
+        self.fig, (self.ax_nrz, self.ax_canal) =\
+                plt.subplots(nrows=2, ncols=1, sharex=True)
 
-        self.linha_sinal, = self.ax.plot([], [], label="Sinal", color="blue")
-        self.ax.legend()
+        # ---- Gráfico 1: sinal nrz puro ---- #
+        self.ax_nrz.set_title("Sinal NRZ puro")
+        self.ax_nrz.set_xlabel("Amostras")
+        self.ax_nrz.set_ylabel("Tensão (V)")
+        self.ax_nrz.grid(True)
+
+        self.linha_nrz, = self.ax_nrz.plot([], [], 
+                                           label="NRZ Puro", color="green")
+        self.ax_nrz.legend()
+
+        # ---- Gráfico 2: sinal no canal (com ruído) ---- #
+        self.ax_canal.set_title("Sinal transmitido")
+        self.ax_canal.set_xlabel("Amostras")
+        self.ax_canal.set_ylabel("Tensão (V)")
+        self.ax_canal.grid(True)
+
+        self.linha_canal, = self.ax_canal.plot([], [], 
+                                           label="Sinal", color="blue")
+        self.ax_canal.legend()
 
         self.canvas = FigureCanvas(self.fig)
         self.canvas.set_size_request(400, 300)
@@ -193,15 +207,21 @@ class JanelaSimulador(Gtk.Window):
     def finalizar_simulacao(self, historico: dict):
         """Este método recebe o histórico do Simulador e atualiza a tela"""
         dados_grafico = historico.get("sinal_canal", [])
+        dados_puro = historico.get("sinal_nrz_puro", [])
         msg_recebida = historico.get("mensagem_final", "")
 
         x = range(len(dados_grafico))
-        self.linha_sinal.set_data(x, dados_grafico)
+        self.linha_canal.set_data(x, dados_grafico)
+        self.linha_nrz.set_data(x, dados_puro)
 
         if dados_grafico:
-            self.ax.set_xlim(0, len(dados_grafico))
-            self.ax.set_ylim(min(dados_grafico) - 
+            self.ax_canal.set_xlim(0, len(dados_grafico))
+            self.ax_canal.set_ylim(min(dados_grafico) - 
                              0.5, max(dados_grafico) + 0.5)
+        if dados_puro:
+            self.ax_nrz.set_xlim(0, len(dados_puro))
+            self.ax_nrz.set_ylim(min(dados_puro) - 
+                             0.5, max(dados_puro) + 0.5)
         
         self.canvas.draw()
 

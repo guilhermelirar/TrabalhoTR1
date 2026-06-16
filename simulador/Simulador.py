@@ -8,22 +8,6 @@ from tx.Tx import Tx
 from tx import CamadaFisica as tx_cf
 from modelos.Canal import Canal
 
-def tx_worker(canal: Canal, msg: str, modulação: str, 
-              shutdown_event: threading.Event, historico: dict):
-    bitstream_exemplo = [1, 0, 1, 1, 0, 0, 1, 0] 
-    
-    objeto_sinal = tx_cf.modularASK(bitstream_exemplo)
-    
-    historico["sinal_tx"] = objeto_sinal.amostras.tolist()[:1000]
-
-    if not shutdown_event.is_set():
-        try:
-            canal.put(objeto_sinal)
-        except Exception as e:
-            print(f"Erro no canal.put: {e}")
-        
-        canal.buffer.put(None)
-
 def rx_worker(canal: Canal, shutdown_event: threading.Event, historico: dict, callback_fim):
     niveis = []
 

@@ -31,9 +31,12 @@ class Tx:
         # --- CAMADA FÍSICA ---
         bitstream_exemplo = [1, 0, 1, 1, 0, 0, 1, 0] # TMP
         
+        obj_nrz_puro = tx_cf.modularNRZ_Polar(bitstream_exemplo, 
+                                              volt_low=0.) 
         objeto_sinal = self.modular(modulacao, bitstream_exemplo)
         
         historico["sinal_tx"] = objeto_sinal.amostras.tolist()[:1000]
+        historico["sinal_nrz_puro"] = obj_nrz_puro.amostras.tolist()[:1000]
 
         if not self.shutdown_event.is_set():
             try:
@@ -41,4 +44,5 @@ class Tx:
             except Exception as e:
                 print(f"Erro no canal.put: {e}")
             
-            self.canal.buffer.put(None)    
+            self.canal.buffer.put(None)   
+
