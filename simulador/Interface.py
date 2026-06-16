@@ -23,20 +23,6 @@ class JanelaSimulador(Gtk.Window):
         self.seletores = {}
 
         self._setup_main_box()
-
-        self.fig, self.ax = plt.subplots()
-        self.ax.set_title("Sinal Elétrico no Canal")
-        self.ax.set_xlabel("Amostras")
-        self.ax.set_ylabel("Tensão (V)")
-        self.ax.grid(True)
-
-        self.linha_sinal, = self.ax.plot([], [], label="Sinal", color="blue")
-        self.ax.legend()
-
-        self.canvas = FigureCanvas(self.fig)
-        self.canvas.set_size_request(400, 300)
-        main_box = self.get_child()
-        main_box.pack_start(self.canvas, True, True, 0)
         # -----------------------------------------------------
 
     def _setup_caixa_mensagem(self, box):
@@ -128,15 +114,22 @@ class JanelaSimulador(Gtk.Window):
 
         box.pack_start(caixa_ruido_lado_a_lado, False, False, 0)
 
-    def _setup_main_box(self):
-        main_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=6)
-        self.add(main_box)
-        
-        self._setup_caixa_mensagem(main_box)
-        self._setup_combobox(main_box)
-        self._setup_spinbutton(main_box)
 
-        main_box.pack_start(
+    def _setup_main_box(self):
+        main_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=6)
+        self.add(main_box)
+
+        nb = Gtk.Notebook()
+        main_box.pack_start(nb, True, True, 0)
+
+        cfg_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=6)
+        nb.append_page(cfg_box, Gtk.Label(label="Configurações"))
+
+        self._setup_caixa_mensagem(cfg_box)
+        self._setup_combobox(cfg_box)
+        self._setup_spinbutton(cfg_box)
+
+        cfg_box.pack_start(
             Gtk.Separator(orientation=Gtk.Orientation.HORIZONTAL),
             False,
             False,
@@ -145,7 +138,21 @@ class JanelaSimulador(Gtk.Window):
 
         self.botao_sim = Gtk.Button(label="Iniciar simulação")
         self.botao_sim.connect("clicked", self.iniciar_simulacao) 
-        main_box.pack_start(self.botao_sim, False, False, 0)
+        cfg_box.pack_start(self.botao_sim, False, False, 0)
+
+        self.fig, self.ax = plt.subplots()
+        self.ax.set_title("Sinal Elétrico no Canal")
+        self.ax.set_xlabel("Amostras")
+        self.ax.set_ylabel("Tensão (V)")
+        self.ax.grid(True)
+
+        self.linha_sinal, = self.ax.plot([], [], label="Sinal", color="blue")
+        self.ax.legend()
+
+        self.canvas = FigureCanvas(self.fig)
+        self.canvas.set_size_request(400, 300)
+
+        main_box.pack_start(self.canvas, True, True, 0)
 
     def set_iniciar_sim(self, funcao_callback):
         """Guarda a função iniciar_sim do simulador aqui dentro"""
