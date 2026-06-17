@@ -1,4 +1,4 @@
-# modelos/Tx.py
+# simulador/rx/Tx.py
 import threading
 from tx import CamadaFisica as tx_cf
 

@@ -1,34 +1,9 @@
 import threading
 from concurrent.futures import ThreadPoolExecutor
-from gi.repository import GLib
-import numpy as np
-
 from Interface import JanelaSimulador  
+from rx.Rx import Rx
 from tx.Tx import Tx
-from tx import CamadaFisica as tx_cf
 from modelos.Canal import Canal
-
-def rx_worker(canal: Canal, shutdown_event: threading.Event, historico: dict, callback_fim):
-    niveis = []
-
-    while not shutdown_event.is_set():
-        try:
-            data = canal.buffer.get(timeout=0.1)
-            
-            if data is None:
-                break
-                    
-            if isinstance(data, np.ndarray):
-                niveis.extend(data.tolist())
-            else:
-                niveis.extend(data)
-        except:
-            continue
-
-    historico["sinal_canal"] = niveis[:1000]
-    historico["mensagem_final"] = "Mensagem Decodificada com Sucesso"
-
-    GLib.idle_add(callback_fim, historico)
 
 class Simulador:
     def __init__(self) -> None:
@@ -46,6 +21,10 @@ class Simulador:
         self.win.set_iniciar_sim(self.iniciar_sim)
         
         self.tx = Tx(self.canal, self.shutdown_event)
+
+        self.rx = Rx(self.canal, self.shutdown_event, 
+                     self.win.finalizar_simulacao)
+        
         self.win.start()
 
     def iniciar_sim(self, config: dict):
@@ -73,11 +52,9 @@ class Simulador:
         )
         
         self.pool.submit(
-            rx_worker, 
-            self.canal, 
-            self.shutdown_event, 
-            self.historico, 
-            self.win.finalizar_simulacao
+            self.rx.receber,
+            config.get("modulacao", "NRZ_Polar"),
+            self.historico
         )
 
 if __name__ == "__main__":
