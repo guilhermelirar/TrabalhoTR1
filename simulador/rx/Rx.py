@@ -15,7 +15,7 @@ class Rx:
         demoduladores = {
                 "NRZ Polar": rx_cf.demodularNRZ_Polar,
                 "Manchester": rx_cf.demodularManchester,
-                #"Bipolar": tx_cf.modularBipolar,
+                "Bipolar": rx_cf.demodularBipolar,
                 #"ASK": tx_cf.modularASK,
                 #"FSK": tx_cf.modularFSK,
                 #"16-QAM": tx_cf.modular16QAM

@@ -42,3 +42,12 @@ def demodularManchester(amostras: list[float], volt_high: float = 5.0,
             bitstream.append(0)
 
     return bitstream
+
+def demodularBipolar(amostras: list[float], volt_high: float = 5.0, 
+                     volt_low: float = -5.0, 
+                     amostras_p_bit: int = 100) -> list[int]:
+    
+    amostras = [abs(i) for i in amostras]
+    bitstream = demodularNRZ_Polar(amostras, volt_high, 0.0, amostras_p_bit)
+
+    return bitstream
