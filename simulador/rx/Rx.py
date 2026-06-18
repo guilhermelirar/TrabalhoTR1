@@ -14,7 +14,7 @@ class Rx:
     def demodular(self, modulacao, amostras: list[float]):
         demoduladores = {
                 "NRZ Polar": rx_cf.demodularNRZ_Polar,
-                #"Manchester": tx_cf.modularManchester,
+                "Manchester": rx_cf.demodularManchester,
                 #"Bipolar": tx_cf.modularBipolar,
                 #"ASK": tx_cf.modularASK,
                 #"FSK": tx_cf.modularFSK,
