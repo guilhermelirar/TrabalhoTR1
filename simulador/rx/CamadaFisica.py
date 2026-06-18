@@ -5,6 +5,9 @@ Implementações dos demoduladores (Camada Física)
 do lado do receptor
 """
 
+import math
+
+
 def demodularNRZ_Polar(amostras: list[float], volt_high: float = 5.0, 
                      volt_low: float = -5.0, 
                      amostras_p_bit: int = 100) -> list[int]:
@@ -44,10 +47,22 @@ def demodularManchester(amostras: list[float], volt_high: float = 5.0,
     return bitstream
 
 def demodularBipolar(amostras: list[float], volt_high: float = 5.0, 
-                     volt_low: float = -5.0, 
                      amostras_p_bit: int = 100) -> list[int]:
     
     amostras = [abs(i) for i in amostras]
     bitstream = demodularNRZ_Polar(amostras, volt_high, 0.0, amostras_p_bit)
 
     return bitstream
+
+def demodularASK(amostras: list[float], volt_high: float = 5.0, 
+                 amostras_p_bit: int = 100) -> list[int]:
+    bitstream = []
+    
+    amostras_retificadas = [abs(x) for x in amostras]
+    media_bit1 = 2 * volt_high / math.pi # média de senoide retificada
+
+    bitstream = demodularNRZ_Polar(amostras_retificadas, media_bit1, 
+                                   0.0, amostras_p_bit)
+
+    return bitstream
+

@@ -16,7 +16,7 @@ class Rx:
                 "NRZ Polar": rx_cf.demodularNRZ_Polar,
                 "Manchester": rx_cf.demodularManchester,
                 "Bipolar": rx_cf.demodularBipolar,
-                #"ASK": tx_cf.modularASK,
+                "ASK": rx_cf.demodularASK,
                 #"FSK": tx_cf.modularFSK,
                 #"16-QAM": tx_cf.modular16QAM
                 }
