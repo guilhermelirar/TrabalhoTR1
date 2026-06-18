@@ -245,7 +245,7 @@ def modular16QAM(bitstream: list[int], volt_high: float = 5.0,
 
 def modularFSK(bitstream: list[int], volt_high: float = 5.0, 
                amostras_p_bit: int = 100,
-               freq1: float = 4., freq2: float = 8.,) -> Sinal:
+               ciclos_f0 = 4, ciclos_f1 = 8) -> Sinal:
     """
     Retorna objeto de Sinal com modulação por frequência 
 
@@ -262,9 +262,9 @@ def modularFSK(bitstream: list[int], volt_high: float = 5.0,
 
     niveis = []
     # base de 0 a 2pi quantidade de ciclos
-    t_bit_1 = np.linspace(0, 2 * np.pi * freq2, amostras_p_bit, 
+    t_bit_1 = np.linspace(0, 2 * np.pi * ciclos_f1, amostras_p_bit, 
                         endpoint=False)
-    t_bit_0 = np.linspace(0, 2 * np.pi * freq1, amostras_p_bit, 
+    t_bit_0 = np.linspace(0, 2 * np.pi * ciclos_f0, amostras_p_bit, 
                         endpoint=False)
     for b in bitstream:
         # senoide de A = volt_high em caso de 1 lógico, 0 cc

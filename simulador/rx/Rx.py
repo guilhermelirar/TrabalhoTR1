@@ -17,7 +17,7 @@ class Rx:
                 "Manchester": rx_cf.demodularManchester,
                 "Bipolar": rx_cf.demodularBipolar,
                 "ASK": rx_cf.demodularASK,
-                #"FSK": tx_cf.modularFSK,
+                "FSK": rx_cf.demodularFSK,
                 #"16-QAM": tx_cf.modular16QAM
                 }
 
