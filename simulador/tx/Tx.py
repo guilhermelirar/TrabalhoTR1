@@ -22,7 +22,8 @@ class Tx:
             if modulacao == "BPSK":
                 return tx_cf.modularPSK(bitstream, bits_por_simbolo=1)
             else:
-                return tx_cf.modularPSK(bitstream, bits_por_simbolo=2)
+                return tx_cf.modularPSK(bitstream, 
+                                        bits_por_simbolo=2)
 
         return modulador_fn(bitstream)
 
@@ -31,8 +32,15 @@ class Tx:
         
         # --- CAMADA FÍSICA ---
         bitstream_exemplo = [1, 0, 1, 1, 0, 0, 1, 0] # TMP
-        
-        obj_nrz_puro = tx_cf.modularNRZ_Polar(bitstream_exemplo, 
+       
+        amostras_p_bit = 100 
+        if modulacao == "QPSK":
+            amostras_p_bit = 50
+        elif modulacao == "16-QAM":
+            amostras_p_bit = 25
+
+        obj_nrz_puro = tx_cf.modularNRZ_Polar(bitstream_exemplo,
+                                              amostras_p_bit=amostras_p_bit,
                                               volt_low=0.) 
         objeto_sinal = self.modular(modulacao, bitstream_exemplo)
         

@@ -137,7 +137,7 @@ def modularASK(bitstream: list[int], volt_high: float = 5.0,
        
 
 def modularPSK(bitstream: list[int], volt_high: float = 5.0, 
-                amostras_p_bit: int = 100, ciclos_p_bit: int = 4,
+                amostras_p_simbolo: int = 100, ciclos_p_bit: int = 4,
                bits_por_simbolo: int = 1) -> Sinal: 
     """
     Retorna objeto de Sinal com modulação por Phase Shift Keying, 
@@ -167,9 +167,8 @@ def modularPSK(bitstream: list[int], volt_high: float = 5.0,
     niveis = []
     # base de 0 a 2pi quantidade de ciclos
     t_simbolo = np.linspace(0, 2 * np.pi * ciclos_p_bit, 
-                            amostras_p_bit * bits_por_simbolo, 
-                        endpoint=False)
-   
+                            amostras_p_simbolo, 
+                            endpoint=False)
     
     for i in range(0, len(bitstream), bits_por_simbolo):
         # informação que será convertida em 1 símbolo
@@ -186,13 +185,13 @@ def modularPSK(bitstream: list[int], volt_high: float = 5.0,
         
     return Sinal(
             np.array(niveis),
-            amostras_p_bit, 
+            amostras_p_simbolo, 
             is_digital=False
             )
 
 
 def modular16QAM(bitstream: list[int], volt_high: float = 5.0, 
-                amostras_p_bit: int = 100, ciclos_p_bit: int = 4) -> Sinal: 
+                amostras_p_simbolo: int = 100, ciclos_p_bit: int = 4) -> Sinal: 
     """
     Retorna objeto de Sinal com modulação por 16-QAM, 
     em que  o sinal corresponde à uma senoide com símbolo codificado
@@ -201,7 +200,7 @@ def modular16QAM(bitstream: list[int], volt_high: float = 5.0,
     Args:
         bitstream: lista de inteiros que representam os bits do sinal 
         volt_high: máximo de energia do sinal
-        amostras_p_bit: quantidade de amostras para representar um único bit
+        amostras_p_simbolo: quantidade de amostras para representar simbolo
         ciclos_p_bit: ciclos da senoide durante representação de 1 bit
 
     Returns:
@@ -220,7 +219,7 @@ def modular16QAM(bitstream: list[int], volt_high: float = 5.0,
     bits_por_simbolo = 4
     # base de 0 a 2pi quantidade de ciclos
     t_simbolo = np.linspace(0, 2 * np.pi * ciclos_p_bit, 
-                            amostras_p_bit * bits_por_simbolo, 
+                            amostras_p_simbolo, 
                         endpoint=False)
    
     for i in range(0, len(bitstream), bits_por_simbolo):
@@ -238,7 +237,7 @@ def modular16QAM(bitstream: list[int], volt_high: float = 5.0,
         
     return Sinal(
             np.array(niveis),
-            amostras_p_bit, 
+            amostras_p_simbolo, 
             is_digital=False
             )
 
