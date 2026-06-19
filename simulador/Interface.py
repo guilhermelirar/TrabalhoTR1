@@ -132,6 +132,21 @@ class JanelaSimulador(Gtk.Window):
         self.botao_sim.connect("clicked", self.iniciar_simulacao) 
         left_box.pack_start(self.botao_sim, False, False, 0)
 
+        # ---- Caixa para os botões de navegação do gráfico ---- #
+        caixa_navegacao = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, 
+                                  spacing=6)
+        
+        btn_esquerda = Gtk.Button(label="<= Voltar")
+        btn_direita = Gtk.Button(label="Avançar =>")
+        
+        btn_esquerda.connect("clicked", self.mover_janela_grafico)
+        btn_direita.connect("clicked", self.mover_janela_grafico)
+        
+        caixa_navegacao.pack_start(btn_esquerda, True, True, 0)
+        caixa_navegacao.pack_start(btn_direita, True, True, 0)
+        
+        left_box.pack_start(caixa_navegacao, False, False, 0)
+
         # ---- separador visual ---- #
         left_box.pack_start(
             Gtk.Separator(orientation=Gtk.Orientation.HORIZONTAL),
@@ -206,15 +221,34 @@ class JanelaSimulador(Gtk.Window):
         if hasattr(self, 'callback_simulador'):
             self.callback_simulador(config)
 
-    def desenhar_grafico(self):
+    def mover_janela_grafico(self, botao):
+        if not hasattr(self, 'offset_atual'):
+            return
+            
+        PASSO = 500  
+        direcao = botao.get_label()
+        
+        if "=>" in direcao:
+            novo_offset = self.offset_atual + PASSO
+        else:
+            novo_offset = max(0, self.offset_atual - PASSO)             
+        self.desenhar_grafico(offset=novo_offset)
+
+    def desenhar_grafico(self, offset=0):
         nrz_referencia = self.dados_grafico[0]
         amostras_canal = self.dados_grafico[1]
+       
+        # amostras vistas por janela de gráfico
+        TAMANHO_JANELA = 500  
+        
+        self.offset_atual = offset 
 
         if amostras_canal:
             x_canal = range(len(amostras_canal))
             self.linha_canal.set_data(x_canal, amostras_canal)
             
-            self.ax_canal.set_xlim(0, len(amostras_canal))
+            # Aplica o zoom/slice visual no eixo X usando o offset
+            self.ax_canal.set_xlim(offset, offset + TAMANHO_JANELA)
             self.ax_canal.set_ylim(min(amostras_canal) - 0.5, 
                                    max(amostras_canal) + 0.5)
 
@@ -222,12 +256,11 @@ class JanelaSimulador(Gtk.Window):
             x_nrz = range(len(nrz_referencia))
             self.linha_nrz.set_data(x_nrz, nrz_referencia)
             
-            self.ax_nrz.set_xlim(0, len(nrz_referencia))
+            self.ax_nrz.set_xlim(offset, offset + TAMANHO_JANELA)
             self.ax_nrz.set_ylim(min(nrz_referencia) - 0.5, 
                                  max(nrz_referencia) + 0.5)
         
         self.canvas.draw()
-        print(f"Gráfico atualizado com {len(amostras_canal)} amostras.")
 
     def finalizar_simulacao(self, historico: dict):
         """Este método recebe o histórico do Simulador e atualiza a tela"""
