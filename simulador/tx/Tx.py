@@ -1,6 +1,7 @@
 # simulador/rx/Tx.py
 import threading
 from tx import CamadaFisica as tx_cf
+from tx import CamadaEnlace as tx_ce
 
 class Tx:
     def __init__(self, canal, shutdown_event: threading.Event) -> None:
@@ -27,25 +28,36 @@ class Tx:
 
         return modulador_fn(bitstream)
 
-    def transmitir(self, msg: str, modulacao: str, historico: dict):
+    def enquadrar(self, bitstream, protocolo):
+        return tx_ce.enquadrar_contagem_caracteres(bitstream, 4)
+
+    def transmitir(self, config: dict, historico: dict):
+        msg = config.get("mensagem", "Ola Mundo")
+        modulacao = config.get("modulacao", "NRZ Polar")
+        enquadramento = config.get("Tipo de Enquadramento", 
+                                   "Contagem de Caracteres")
+
         # --- CAMADA DE ENLACE ---
-        
+        bitstream = tx_ce.str_to_bitstream(msg)
+        bitstream = self.enquadrar(bitstream, enquadramento)
+
+        # TMP todo quadro com 4 bytes
+        bitstream = tx_ce.enquadrar_contagem_caracteres(bitstream, 4)
+
         # --- CAMADA FÍSICA ---
-        bitstream_exemplo = [1, 0, 1, 1, 0, 0, 1, 0] # TMP
-       
         amostras_p_bit = 100 
         if modulacao == "QPSK":
             amostras_p_bit = 50
         elif modulacao == "16-QAM":
             amostras_p_bit = 25
 
-        obj_nrz_puro = tx_cf.modularNRZ_Polar(bitstream_exemplo,
+        obj_nrz_puro = tx_cf.modularNRZ_Polar(bitstream,
                                               amostras_p_bit=amostras_p_bit,
                                               volt_low=0.) 
-        objeto_sinal = self.modular(modulacao, bitstream_exemplo)
+        objeto_sinal = self.modular(modulacao, bitstream)
         
-        historico["sinal_tx"] = objeto_sinal.amostras.tolist()[:1000]
-        historico["sinal_nrz_puro"] = obj_nrz_puro.amostras.tolist()[:1000]
+        historico["sinal_tx"] = objeto_sinal.amostras.tolist()[:1200]
+        historico["sinal_nrz_puro"] = obj_nrz_puro.amostras.tolist()[:1200]
 
         if not self.shutdown_event.is_set():
             try:
