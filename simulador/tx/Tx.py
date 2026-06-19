@@ -56,8 +56,8 @@ class Tx:
                                               volt_low=0.) 
         objeto_sinal = self.modular(modulacao, bitstream)
         
-        historico["sinal_tx"] = objeto_sinal.amostras.tolist()[:1200]
-        historico["sinal_nrz_puro"] = obj_nrz_puro.amostras.tolist()[:1200]
+        historico["sinal_tx"] = objeto_sinal.amostras.tolist()[:10000]
+        historico["sinal_nrz_puro"] = obj_nrz_puro.amostras.tolist()[:10000]
 
         if not self.shutdown_event.is_set():
             try:

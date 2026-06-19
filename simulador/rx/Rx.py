@@ -52,10 +52,10 @@ class Rx:
             except:
                 continue
 
-        historico["sinal_canal"] = amostras[:1000]
+        historico["sinal_canal"] = amostras[:10000]
         historico["mensagem_final"] = bitstream 
 
-        GLib.idle_add(self.callback_fim, historico)
+        self.callback_fim(historico)
 
         # --- CAMADA DE ENLACE ---
 

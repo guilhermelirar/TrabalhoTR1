@@ -22,6 +22,8 @@ class JanelaSimulador(Gtk.Window):
         self.combos = {}
         self.seletores = {}
 
+        self.dados_grafico = ([], [])
+
         self._setup_main_box()
         # -----------------------------------------------------
 
@@ -204,28 +206,37 @@ class JanelaSimulador(Gtk.Window):
         if hasattr(self, 'callback_simulador'):
             self.callback_simulador(config)
 
-    def finalizar_simulacao(self, historico: dict):
-        """Este método recebe o histórico do Simulador e atualiza a tela"""
-        dados_grafico = historico.get("sinal_canal", [])
-        dados_puro = historico.get("sinal_nrz_puro", [])
-        msg_recebida = historico.get("mensagem_final", "")
+    def desenhar_grafico(self):
+        nrz_referencia = self.dados_grafico[0]
+        amostras_canal = self.dados_grafico[1]
 
-        x = range(len(dados_grafico))
-        self.linha_canal.set_data(x, dados_grafico)
-        self.linha_nrz.set_data(x, dados_puro)
+        if amostras_canal:
+            x_canal = range(len(amostras_canal))
+            self.linha_canal.set_data(x_canal, amostras_canal)
+            
+            self.ax_canal.set_xlim(0, len(amostras_canal))
+            self.ax_canal.set_ylim(min(amostras_canal) - 0.5, 
+                                   max(amostras_canal) + 0.5)
 
-        if dados_grafico:
-            self.ax_canal.set_xlim(0, len(dados_grafico))
-            self.ax_canal.set_ylim(min(dados_grafico) - 
-                             0.5, max(dados_grafico) + 0.5)
-        if dados_puro:
-            self.ax_nrz.set_xlim(0, len(dados_puro))
-            self.ax_nrz.set_ylim(min(dados_puro) - 
-                             0.5, max(dados_puro) + 0.5)
+        if nrz_referencia:
+            x_nrz = range(len(nrz_referencia))
+            self.linha_nrz.set_data(x_nrz, nrz_referencia)
+            
+            self.ax_nrz.set_xlim(0, len(nrz_referencia))
+            self.ax_nrz.set_ylim(min(nrz_referencia) - 0.5, 
+                                 max(nrz_referencia) + 0.5)
         
         self.canvas.draw()
+        print(f"Gráfico atualizado com {len(amostras_canal)} amostras.")
 
-        print(f"Gráfico atualizado com {len(dados_grafico)} amostras.")
+    def finalizar_simulacao(self, historico: dict):
+        """Este método recebe o histórico do Simulador e atualiza a tela"""
+        self.dados_grafico = (historico.get("sinal_nrz_puro", []), 
+                              historico.get("sinal_canal", []))
+                              
+        msg_recebida = historico.get("mensagem_final", "")
+        self.desenhar_grafico()
+
         print(f"Interface recebeu o texto final: {msg_recebida}")
         
         return False

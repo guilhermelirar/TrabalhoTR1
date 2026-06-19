@@ -24,8 +24,14 @@ class Simulador:
 
         self.rx = Rx(self.canal, self.shutdown_event, 
                      self.win.finalizar_simulacao)
-        
+       
         self.win.start()
+
+    def finalizar_sim(self, historico: dict):
+        self.historico = historico
+        
+        from gi.repository import GLib
+        GLib.idle_add(self.win.finalizar_simulacao, historico)
 
     def iniciar_sim(self, config: dict):
         print("Simulação iniciada com as configurações:", config)
@@ -40,14 +46,12 @@ class Simulador:
         self.canal.desvio_ruido = config.get("ruido_sigma", 0.5)
         self.canal.media_ruido = config.get("ruido_media", 0.0)
 
-        self.historico["sinal_tx"] = []
         self.historico["sinal_canal"] = []
         self.historico["mensagem_final"] = ""
 
         self.pool.submit(
             self.tx.transmitir, 
-            config.get("mensagem", "Ola Mundo"), 
-            config.get("modulacao", "ASK"),
+            config,
             self.historico
         )
         
