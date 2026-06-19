@@ -7,9 +7,6 @@ do lado do receptor
 
 import math
 
-from numpy import append
-
-
 def demodularNRZ_Polar(amostras: list[float], volt_high: float = 5.0, 
                      volt_low: float = -5.0, 
                      amostras_p_bit: int = 100) -> list[int]:
@@ -100,3 +97,28 @@ def demodularFSK(amostras: list[float],
     
     return bitstream
 
+def demodularBPSK(amostras: list[float], volt_high = 5.0, 
+                  amostras_p_simbolo = 100, ciclos_f = 4):
+    import numpy as np 
+    bitstream = []
+
+    t = np.linspace(0, 1, amostras_p_simbolo, endpoint=False)
+
+    # portadora referencia para bit 1 no BPSK
+    portadora_ref = volt_high * np.cos(2 * np.pi * ciclos_f * t)
+
+    for inicio in range(0, len(amostras), amostras_p_simbolo):
+        fim = inicio + amostras_p_simbolo
+        janela = np.array(amostras[inicio:fim])
+        
+        if len(janela) < amostras_p_simbolo:
+            continue
+
+        correlacao = np.sum(janela * portadora_ref)
+  
+        if correlacao > 0:
+            bitstream.append(1)
+        else: # fora de fase
+            bitstream.append(0)
+    
+    return bitstream

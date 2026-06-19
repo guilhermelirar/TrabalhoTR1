@@ -18,6 +18,7 @@ class Rx:
                 "Bipolar": rx_cf.demodularBipolar,
                 "ASK": rx_cf.demodularASK,
                 "FSK": rx_cf.demodularFSK,
+                "BPSK": rx_cf.demodularBPSK
                 #"16-QAM": tx_cf.modular16QAM
                 }
 
