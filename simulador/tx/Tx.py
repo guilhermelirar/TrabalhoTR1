@@ -29,12 +29,18 @@ class Tx:
         return modulador_fn(bitstream)
 
     def enquadrar(self, bitstream, protocolo):
+        if protocolo == "Inserção de Bytes":
+            bitstream_out, report = tx_ce.enquadrar_bytes_flag(bitstream)
+            print(report)
+            return bitstream_out
+
+        # "Contagem de Caracteres"
         return tx_ce.enquadrar_contagem_caracteres(bitstream, 4)
 
     def transmitir(self, config: dict, historico: dict):
         msg = config.get("mensagem", "Ola Mundo")
         modulacao = config.get("modulacao", "NRZ Polar")
-        enquadramento = config.get("Tipo de Enquadramento", 
+        enquadramento = config.get("enquadramento", 
                                    "Contagem de Caracteres")
 
         # --- CAMADA DE ENLACE ---
