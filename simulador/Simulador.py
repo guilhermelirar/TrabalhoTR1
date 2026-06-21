@@ -57,7 +57,7 @@ class Simulador:
         
         self.pool.submit(
             self.rx.receber,
-            config.get("modulacao", "NRZ_Polar"),
+            config,
             self.historico
         )
 

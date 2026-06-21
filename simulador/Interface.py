@@ -3,6 +3,7 @@ import gi
 import matplotlib.pyplot as plt
 from matplotlib.backends.backend_gtk3agg \
         import FigureCanvasGTK3Agg as FigureCanvas
+from numpy import zeros_like
 
 gi.require_version("Gtk", "3.0")
 from gi.repository import GLib, Gtk
@@ -258,37 +259,55 @@ class JanelaSimulador(Gtk.Window):
         self.canvas.draw()
 
     def finalizar_simulacao(self, historico: dict):
+        # 1. Atualiza os dados dos gráficos e reseta a janela de visualização
         self.dados_grafico = (historico.get("sinal_nrz_puro", []), 
                               historico.get("sinal_canal", []))
         self.desenhar_grafico(offset=0)
         
+        # 2. Resgata os relatórios gerados
         report_tx = historico.get("report_enlace", {})
+        report_rx = historico.get("report_enlace_rx", {})
+        msg_final = historico.get("mensagem_final", "[Sem dados]")
         
-        texto_relatorio = "--- RELATÓRIO TX ---\n\n"
+        # --- MONTAGEM DO TEXTO DO RELATÓRIO ---
+        texto_relatorio = "=========================================\n"
+        texto_relatorio += f"  MENSAGEM RECEBIDA: \"{msg_final}\"\n"
+        texto_relatorio += "=========================================\n\n"
         
+        # ====== SEÇÃO TRANSMISSOR (TX) ======
+        texto_relatorio += "--- RELATÓRIO TX ---\n"
         if isinstance(report_tx, list):
-            texto_relatorio += "Modo: Contagem de Caracteres\n"
-            texto_relatorio += "Quadros gerados:\n"
+            texto_relatorio += "Modo: Contagem de Caracteres\nQuadros gerados:\n"
             texto_relatorio += "\n".join(report_tx)
-            
         elif isinstance(report_tx, dict):
             texto_relatorio += "Modo: Inserção de Bytes (Flags)\n"
-            texto_relatorio +=\
-                    f"FLAG utilizada: {report_tx.get('FLAG', '')}\n"
-            texto_relatorio += \
-                f"ESC utilizado: {report_tx.get('ESC', '')}\n\n"
-            texto_relatorio += "Fluxo de transmissão:\n"
-            
-            lista_bits = report_tx.get('BITS', [])
-            texto_relatorio += "\n".join(lista_bits)
-        
+            texto_relatorio += f"FLAG utilizada: {report_tx.get('FLAG', '')}\n"
+            texto_relatorio += f"ESC utilizado: {report_tx.get('ESC', '')}\n\nFluxo enviado:\n"
+            texto_relatorio += "\n".join(report_tx.get('BITS', []))
         else:
             texto_relatorio += "Nenhum dado transmitido."
+            
+        texto_relatorio += "\n\n" + "-"*40 + "\n\n"
+        
+        # ====== SEÇÃO RECEPTOR (RX) ======
+        texto_relatorio += "--- RELATÓRIO RX ---\n"
+        if isinstance(report_rx, list):
+            texto_relatorio +=\
+                    "Modo: Contagem de Caracteres\nQuadros processados:\n"
+            texto_relatorio += "\n".join(report_rx)
+        elif isinstance(report_rx, dict):
+            texto_relatorio += "Modo: Inserção de Bytes (Flags)\n"
+            texto_relatorio += f"FLAG detectada: {report_rx.get('FLAG', '')}\n"
+            texto_relatorio +=\
+                    f"ESC detectado: {report_rx.get('ESC', '')}\n\nFluxo recebido e limpo:\n"
+            texto_relatorio += "\n".join(report_rx.get('BITS', []))
+        else:
+            texto_relatorio += "Nenhum dado processado no receptor."
 
+        # 3. Injeta a string completa no buffer do GtkTextView
         buffer = self.report_txview.get_buffer()
         buffer.set_text(texto_relatorio)
         
-        return False
 
     def start(self):
         self.connect("destroy", Gtk.main_quit)
