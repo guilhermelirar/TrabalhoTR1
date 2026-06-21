@@ -16,7 +16,8 @@ def int_to_bitstream(number: int, max_bytes: int) -> list[int]:
 
 def bits_para_hexa(lista_de_bits):
     # Agrupa a lista de 8 em 8 bits
-    bytes_list = [lista_de_bits[i:i+8] for i in range(0, len(lista_de_bits), 8)]
+    bytes_list = [lista_de_bits[i:i+8] 
+                  for i in range(0,len(lista_de_bits), 8)]
     
     hexa_str = []
     for b in bytes_list:
@@ -36,13 +37,14 @@ def bits_para_hexa(lista_de_bits):
 
 # === 1/3 Protocolos de enquadramento === #
 
-def enquadrar_contagem_caracteres(bitstream: list[int], 
+def enquadrar_contagem(bitstream: list[int], 
                                   num_bytes: int = 4):
     
     bitstream_out = []
     n_bits_quadro = num_bytes * 8
     bitstream_len = len(bitstream)
 
+    report = []
     for i in range(0, bitstream_len, n_bits_quadro):
         final = min(bitstream_len, n_bits_quadro + i)  
         quadro_util = bitstream[i:final]
@@ -50,11 +52,12 @@ def enquadrar_contagem_caracteres(bitstream: list[int],
         # 1 byte de contagem de caracteres
         bitstream_out.extend(int_to_bitstream(len(quadro_util), 1))
         bitstream_out.extend(quadro_util)
-
-        print(f"Quadro {i} tem {len(quadro_util)}")
+        
+        report.append(f"[{len(quadro_util)//8}]" 
+                      f" {bits_para_hexa(quadro_util)}")
         
     print(bitstream_out)
-    return bitstream_out
+    return bitstream_out, report
 
 def enquadrar_bytes_flag(bitstream: list[int], num_bytes: int = 4):
     FLAG = str_to_bitstream("B")
@@ -87,7 +90,7 @@ def enquadrar_bytes_flag(bitstream: list[int], num_bytes: int = 4):
         bitstream_out.extend(FLAG)  # coloca FLAG no inicio
         report["BITS"].append("[FLAG]")
 
-        inserir_escape(quadro_util) # insere quadro com escape se necessário
+        inserir_escape(quadro_util)
 
         bitstream_out.extend(FLAG)
         report["BITS"].append("[FLAG]")

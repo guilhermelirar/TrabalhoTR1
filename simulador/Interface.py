@@ -1,5 +1,4 @@
 # simulador/Interface.py
-import threading
 import gi
 import matplotlib.pyplot as plt
 from matplotlib.backends.backend_gtk3agg \
@@ -7,10 +6,6 @@ from matplotlib.backends.backend_gtk3agg \
 
 gi.require_version("Gtk", "3.0")
 from gi.repository import GLib, Gtk
-
-from modelos.Canal import Canal
-from modelos.Config import Config
-
 
 class JanelaSimulador(Gtk.Window):
 
@@ -155,14 +150,14 @@ class JanelaSimulador(Gtk.Window):
             10,
         )
 
-        # ---- aba de relatório do TX-RX ---- #
-        tx_report = Gtk.TextView()
-        tx_report.set_editable(False)
         scroll_win = Gtk.ScrolledWindow()
-        scroll_win.add(tx_report)
-        # --- #
+        # ---- aba de relatório do TX-RX ---- #
+        report = Gtk.TextView()
+        report.set_editable(False)
+        scroll_win.add(report)
 
-        left_box.pack_start(scroll_win, False, False, 0)
+        left_box.pack_start(scroll_win, True, True, 0)
+        self.report_txview = report
 
         # ---- Canvas ----  #
         self.fig, (self.ax_nrz, self.ax_canal) =\
@@ -263,14 +258,35 @@ class JanelaSimulador(Gtk.Window):
         self.canvas.draw()
 
     def finalizar_simulacao(self, historico: dict):
-        """Este método recebe o histórico do Simulador e atualiza a tela"""
         self.dados_grafico = (historico.get("sinal_nrz_puro", []), 
                               historico.get("sinal_canal", []))
-                              
-        msg_recebida = historico.get("mensagem_final", "")
-        self.desenhar_grafico()
+        self.desenhar_grafico(offset=0)
+        
+        report_tx = historico.get("report_enlace", {})
+        
+        texto_relatorio = "--- RELATÓRIO TX ---\n\n"
+        
+        if isinstance(report_tx, list):
+            texto_relatorio += "Modo: Contagem de Caracteres\n"
+            texto_relatorio += "Quadros gerados:\n"
+            texto_relatorio += "\n".join(report_tx)
+            
+        elif isinstance(report_tx, dict):
+            texto_relatorio += "Modo: Inserção de Bytes (Flags)\n"
+            texto_relatorio +=\
+                    f"FLAG utilizada: {report_tx.get('FLAG', '')}\n"
+            texto_relatorio += \
+                f"ESC utilizado: {report_tx.get('ESC', '')}\n\n"
+            texto_relatorio += "Fluxo de transmissão:\n"
+            
+            lista_bits = report_tx.get('BITS', [])
+            texto_relatorio += "\n".join(lista_bits)
+        
+        else:
+            texto_relatorio += "Nenhum dado transmitido."
 
-        print(f"Interface recebeu o texto final: {msg_recebida}")
+        buffer = self.report_txview.get_buffer()
+        buffer.set_text(texto_relatorio)
         
         return False
 

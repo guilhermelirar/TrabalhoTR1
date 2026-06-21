@@ -28,32 +28,25 @@ class Tx:
 
         return modulador_fn(bitstream)
 
-    def enquadrar(self, bitstream, protocolo):
-        if protocolo == "Inserção de Bytes":
-            bitstream_out, report = tx_ce.enquadrar_bytes_flag(bitstream)
-            print(report)
-            return bitstream_out
+    def enlace(self, msg, enquadramento, historico):
+        bits = tx_ce.str_to_bitstream(msg)
+        
+        report = {}
+        if "Contagem" in enquadramento:
+            bits, report = tx_ce.enquadrar_contagem(bits)
+        
+        elif "Bytes" in enquadramento:
+            bits, report = tx_ce.enquadrar_bytes_flag(bits)
 
-        # "Contagem de Caracteres"
-        return tx_ce.enquadrar_contagem_caracteres(bitstream, 4)
+        historico["report_enlace"] = report
+        return bits
 
-    def transmitir(self, config: dict, historico: dict):
-        msg = config.get("mensagem", "Ola Mundo")
-        modulacao = config.get("modulacao", "NRZ Polar")
-        enquadramento = config.get("enquadramento", 
-                                   "Contagem de Caracteres")
-
-        # --- CAMADA DE ENLACE ---
-        bitstream = tx_ce.str_to_bitstream(msg)
-        bitstream = self.enquadrar(bitstream, enquadramento)
-
-        # TMP todo quadro com 4 bytes
-        bitstream = tx_ce.enquadrar_contagem_caracteres(bitstream, 4)
-
-        # --- CAMADA FÍSICA ---
+    def camada_fisica(self, bitstream, modulacao, historico):
         amostras_p_bit = 100 
+        
         if modulacao == "QPSK":
             amostras_p_bit = 50
+        
         elif modulacao == "16-QAM":
             amostras_p_bit = 25
 
@@ -62,12 +55,23 @@ class Tx:
                                               volt_low=0.) 
         objeto_sinal = self.modular(modulacao, bitstream)
         
-        historico["sinal_tx"] = objeto_sinal.amostras.tolist()[:10000]
         historico["sinal_nrz_puro"] = obj_nrz_puro.amostras.tolist()[:10000]
+        return objeto_sinal
+
+    def transmitir(self, config: dict, historico: dict):
+        msg = config.get("mensagem", "Ola Mundo")
+        modulacao = config.get("modulacao", "NRZ Polar")
+        enquadramento = config.get("enquadramento", 
+                                   "Contagem de Caracteres")
+
+        bitstream = self.enlace(msg, enquadramento, historico)
+        sinal = self.camada_fisica(bitstream, modulacao, historico)
+        
+        print(historico["report_enlace"])
 
         if not self.shutdown_event.is_set():
             try:
-                self.canal.put(objeto_sinal)
+                self.canal.put(sinal)
             except Exception as e:
                 print(f"Erro no canal.put: {e}")
             
