@@ -38,7 +38,7 @@ class Tx:
         elif "Bytes" in enquadramento:
             bits, report = tx_ce.enquadrar_bytes_flag(bits)
 
-        historico["report_enlace"] = report
+        historico["report_enquadramento_tx"] = report
         return bits
 
     def camada_fisica(self, bitstream, modulacao, historico):
@@ -67,8 +67,6 @@ class Tx:
         bitstream = self.enlace(msg, enquadramento, historico)
         sinal = self.camada_fisica(bitstream, modulacao, historico)
         
-        print(historico["report_enlace"])
-
         if not self.shutdown_event.is_set():
             try:
                 self.canal.put(sinal)

@@ -44,56 +44,54 @@ def enquadrar_contagem(bitstream: list[int],
     n_bits_quadro = num_bytes * 8
     bitstream_len = len(bitstream)
 
-    report = []
+    report_l = ["Quadros de até 4 bytes"]
     for i in range(0, bitstream_len, n_bits_quadro):
         final = min(bitstream_len, n_bits_quadro + i)  
         quadro_util = bitstream[i:final]
         
-        # 1 byte de contagem de caracteres
         bitstream_out.extend(int_to_bitstream(len(quadro_util), 1))
         bitstream_out.extend(quadro_util)
         
-        report.append(f"[{len(quadro_util)//8}]" 
+        report_l.append(f"[{len(quadro_util)//8}]" 
                       f" {bits_para_hexa(quadro_util)}")
         
-    print(bitstream_out)
+    report = "\n".join(report_l)
     return bitstream_out, report
 
 def enquadrar_bytes_flag(bitstream: list[int], num_bytes: int = 4):
     FLAG = str_to_bitstream("B")
     ESC = str_to_bitstream("\\")
 
-    report = { "FLAG": bits_para_hexa(FLAG), 
-              "ESC": bits_para_hexa(ESC), 
-              "BITS": []}
+    report_l = [f"FLAG: {bits_para_hexa(FLAG)}, ESC: {bits_para_hexa(ESC)}"]
     bitstream_out = []
     n_bits_quadro = num_bytes * 8
     bitstream_len = len(bitstream)
    
     def inserir_escape(quadro_util: list[int]):
         # verifica ocorrência de FLAG ou ESC
+        quadro_str = ["[FLAG]"]
         for i in range(0, len(quadro_util), 8):
             byte = quadro_util[i:i+8] 
 
             # Inserindo ESC quando necessário
             if byte == FLAG or byte == ESC:
                 bitstream_out.extend(ESC)
-                report["BITS"].append("[ESC]")
+                quadro_str.append("[ESC]")
             
             bitstream_out.extend(byte) # Inserindo conteúdo original
-        report["BITS"].append(bits_para_hexa(quadro_util))
+
+        quadro_str.append(bits_para_hexa(quadro_util))
+        quadro_str.append("[FLAG]")
+        quadro_str = " ".join(quadro_str)
+        report_l.append(quadro_str)
 
     for i in range(0, bitstream_len, n_bits_quadro):
         final = min(bitstream_len, n_bits_quadro + i)
         quadro_util = bitstream[i:final]
 
         bitstream_out.extend(FLAG)  # coloca FLAG no inicio
-        report["BITS"].append("[FLAG]")
-
         inserir_escape(quadro_util)
-
         bitstream_out.extend(FLAG)
-        report["BITS"].append("[FLAG]")
 
-    print(report)
+    report = "\n".join(report_l)
     return bitstream_out, report

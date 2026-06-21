@@ -259,55 +259,39 @@ class JanelaSimulador(Gtk.Window):
         self.canvas.draw()
 
     def finalizar_simulacao(self, historico: dict):
-        # 1. Atualiza os dados dos gráficos e reseta a janela de visualização
+        # 1. Gráficos
         self.dados_grafico = (historico.get("sinal_nrz_puro", []), 
                               historico.get("sinal_canal", []))
         self.desenhar_grafico(offset=0)
         
-        # 2. Resgata os relatórios gerados
-        report_tx = historico.get("report_enlace", {})
-        report_rx = historico.get("report_enlace_rx", {})
+        # 2. Montagem do painel centralizando as strings prontas
         msg_final = historico.get("mensagem_final", "[Sem dados]")
         
-        # --- MONTAGEM DO TEXTO DO RELATÓRIO ---
-        texto_relatorio = "=========================================\n"
-        texto_relatorio += f"  MENSAGEM RECEBIDA: \"{msg_final}\"\n"
-        texto_relatorio += "=========================================\n\n"
+        linhas = [
+            "=========================================",
+            f"  MENSAGEM RECEBIDA: \"{msg_final}\"",
+            "=========================================\n",
+            "--- SEÇÃO DE TRANSMISSÃO (TX) ---",
+            historico.get("report_enquadramento_tx", 
+                          "Sem dados de enquadramento."),
+            historico.get("report_erro_tx", 
+                          "Sem dados de controle de erro."),
+            "\n" + "-"*40 + "\n",
+            "--- SEÇÃO DE RECEPÇÃO (RX) ---",
+            historico.get("report_erro_rx", 
+                          "Sem dados de controle de erro rx."),
+            historico.get("report_enquadramento_rx", 
+                          "Sem dados de desenquadramento.")
+        ]
         
-        # ====== SEÇÃO TRANSMISSOR (TX) ======
-        texto_relatorio += "--- RELATÓRIO TX ---\n"
-        if isinstance(report_tx, list):
-            texto_relatorio += "Modo: Contagem de Caracteres\nQuadros gerados:\n"
-            texto_relatorio += "\n".join(report_tx)
-        elif isinstance(report_tx, dict):
-            texto_relatorio += "Modo: Inserção de Bytes (Flags)\n"
-            texto_relatorio += f"FLAG utilizada: {report_tx.get('FLAG', '')}\n"
-            texto_relatorio += f"ESC utilizado: {report_tx.get('ESC', '')}\n\nFluxo enviado:\n"
-            texto_relatorio += "\n".join(report_tx.get('BITS', []))
-        else:
-            texto_relatorio += "Nenhum dado transmitido."
-            
-        texto_relatorio += "\n\n" + "-"*40 + "\n\n"
-        
-        # ====== SEÇÃO RECEPTOR (RX) ======
-        texto_relatorio += "--- RELATÓRIO RX ---\n"
-        if isinstance(report_rx, list):
-            texto_relatorio +=\
-                    "Modo: Contagem de Caracteres\nQuadros processados:\n"
-            texto_relatorio += "\n".join(report_rx)
-        elif isinstance(report_rx, dict):
-            texto_relatorio += "Modo: Inserção de Bytes (Flags)\n"
-            texto_relatorio += f"FLAG detectada: {report_rx.get('FLAG', '')}\n"
-            texto_relatorio +=\
-                    f"ESC detectado: {report_rx.get('ESC', '')}\n\nFluxo recebido e limpo:\n"
-            texto_relatorio += "\n".join(report_rx.get('BITS', []))
-        else:
-            texto_relatorio += "Nenhum dado processado no receptor."
+        # Junta todas as partes com uma quebra de linha
+        texto_relatorio = "\n".join(linhas)
 
-        # 3. Injeta a string completa no buffer do GtkTextView
+        # 3. Exibe na tela
         buffer = self.report_txview.get_buffer()
         buffer.set_text(texto_relatorio)
         
+        return False        
 
     def start(self):
         self.connect("destroy", Gtk.main_quit)

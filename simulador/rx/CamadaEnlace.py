@@ -39,7 +39,7 @@ def desenquadrar_contagem(bitstream: list[int]):
     bitstream_out = []
     i = 0
     bitstream_len = len(bitstream)
-    report = []
+    report_l = []
 
     while i < bitstream_len:
         # Se não há 1 byte
@@ -58,62 +58,59 @@ def desenquadrar_contagem(bitstream: list[int]):
         # Salva os bits originais de volta
         bitstream_out.extend(quadro_util)
         
-        report.append(
+        report_l.append(
                 f"[{tamanho_quadro_bits // 8}] {bits_para_hexa(quadro_util)}")
         
         i = final_quadro
 
+    report = "\n".join(report_l)
     return bitstream_out, report
 
 
+
 def desenquadrar_bytes_flag(bitstream: list[int]):
-    # Define as mesmas referências do TX
     FLAG = str_to_bitstream("B")
     ESC = str_to_bitstream("\\")
 
-    report = {
-        "FLAG": bits_para_hexa(FLAG), 
-        "ESC": bits_para_hexa(ESC), 
-        "BITS": []
-    }
     bitstream_out = []
     i = 0
     bitstream_len = len(bitstream)
+    report_l = []
 
     while i < bitstream_len:
-        # Verifica se o byte atual é uma FLAG de início de quadro
         byte_atual = bitstream[i:i+8]
         
         if byte_atual == FLAG:
-            report["BITS"].append("[FLAG]")
+            report_str = "[FLAG] "
             i += 8
             
-            # Processa o conteúdo do quadro até achar a FLAG de fechamento
             quadro_recuperado = []
             while i < bitstream_len:
                 byte_interno = bitstream[i:i+8]
                 
                 if byte_interno == FLAG:
-                    # Achou o fim do quadro!
-                    report["BITS"].append(bits_para_hexa(quadro_recuperado))
-                    report["BITS"].append("[FLAG]")
+                    # fim do quadro
+                    report_str += bits_para_hexa(quadro_recuperado) + " [FLAG]"
                     i += 8
                     break
                 elif byte_interno == ESC:
-                    # Se for ESC, o próximo byte é dado puro (ignora o ESC)
-                    report["BITS"].append("[ESC]")
+                    # se ESC, registra, pega próximo byte como útil
+                    report_str += "[ESC] "
                     i += 8
                     byte_dado = bitstream[i:i+8]
                     quadro_recuperado.extend(byte_dado)
                     bitstream_out.extend(byte_dado)
                     i += 8
                 else:
-                    # Dado normal
+                    # dado útil normal
                     quadro_recuperado.extend(byte_interno)
                     bitstream_out.extend(byte_interno)
                     i += 8
+            
+
+            report_l.append(report_str)
         else:
-            # Caso haja lixo fora de quadros
             i += 8
 
+    report = "\n".join(report_l)
     return bitstream_out, report

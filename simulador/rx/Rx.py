@@ -63,7 +63,7 @@ class Rx:
             bits_uteis, report_rx = rx_ce.desenquadrar_bytes_flag(bitstream)
 
         # Guarda o relatório do receptor no histórico para a interface ler
-        historico["report_enlace_rx"] = report_rx 
+        historico["report_enquadramento_rx"] = report_rx 
 
         # --- CAMADA DE APLICAÇÃO (CONVERSÃO FINAL) ---
         # Converte os bits limpos/desenquadrados de volta para string legível
