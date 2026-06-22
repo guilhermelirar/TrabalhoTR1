@@ -159,3 +159,28 @@ def desenquadrar_bits_inseridos(bitstream: list[int]):
 
     report = "\n".join(report_l)
     return bitstream_out, report
+
+# === TRATAMENTO DE RROS === 
+def verificar_paridade(bits):
+    STEP = 8 # bits onde a paridade deve ser inserida
+    bits_o = []
+
+    report_l = []
+    for i in range(0, len(bits), STEP + 1):
+        fim = min(len(bits), STEP + 1)
+        janela = bits[i:fim]
+        n_1s = sum(bit for bit in janela if bit == 1)
+        
+        p = n_1s % 2 # bit de paridade
+        
+        if p == 0:
+            print("Paridade correta")
+            report_l.append(f"[OK] {bits_para_hexa(janela[:fim-1])}")
+            bits_o.extend(janela[:fim-1])
+
+        else:
+            report_l.append(f"[ERRO] {bits_para_hexa(janela[i:fim])}")
+        
+    report = "\n".join(report_l) 
+
+    return bits_o, report
