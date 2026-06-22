@@ -99,40 +99,40 @@ def enquadrar_bytes_flag(bitstream: list[int], num_bytes: int = 4):
 def enquadrar_bits_flag(bits: list[int], num_bytes: int = 4):
     FLAG = [0, 1, 1, 1, 1, 1, 1, 0]
     
+    print("\n" + "="*50)
+    print("  DEBUG: INICIANDO ENQUADRAMENTO DE BITS")
+    print(f"  Mensagem original (bits total): {len(bits)} bits")
+    print(f"  Tamanho do quadro configurado: {num_bytes} bytes ({num_bytes * 8} bits)")
+    print("="*50)
+
     bitstream_out = []
     n_bits_quadro = num_bytes * 8
     bitstream_len = len(bits)
     report_l = [f"FLAG: {bits_para_hexa(FLAG)}"]
 
+    num_quadro = 1
     for i in range(0, bitstream_len, n_bits_quadro):
         final = min(bitstream_len, n_bits_quadro + i)
         quadro_util = bits[i:final]
 
+        print(f"\n--- Processando Quadro #{num_quadro} ---")
+        print(f"Bits originais do quadro: {quadro_util}")
+        print(f"Representação Hexa original: {bits_para_hexa(quadro_util)}")
+
+        # Adiciona a FLAG de início
+        print(f"-> Inserindo FLAG de início: {FLAG}")
         bitstream_out.extend(FLAG)
         
-        # acrescentar 0 após sequência de 5 1s
         quadro_com_stuffing = []
         contador_1 = 0
+        bits_injetados_neste_quadro = 0
         
-        for bit in quadro_util:
+        print("Iniciando varredura de bits para Bit Stuffing:")
+        for idx, bit in enumerate(quadro_util):
             quadro_com_stuffing.append(bit)
            
             if bit == 1:
                 contador_1 += 1
+                print(f"  Bit[{idx}]: 1 -> Contador de sequências '1': {contador_1}")
                 if contador_1 == 5:
-                    quadro_com_stuffing.append(0)
-                    contador_1 = 0 
-            else:
-                contador_1 = 0 
-
-        bitstream_out.extend(quadro_com_stuffing)
-
-        bitstream_out.extend(FLAG)
-       
-        print("REPORT L", report_l)
-        report_l.append(f"[FLAG] {bits_para_hexa(quadro_com_stuffing)} [FLAG]")
-
-    report = "\n".join(report_l)
-    return bitstream_out, report
-
-
+                    print("  ⚠️ ALERTA: Sequência de 5 bits '1'

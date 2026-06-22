@@ -31,13 +31,20 @@ class Tx:
     def enlace(self, msg, enquadramento, historico):
         bits = tx_ce.str_to_bitstream(msg)
         
-        report = {}
-        if "Contagem" in enquadramento:
+        
+        report = "ERRO: Nenhum enquadramento foi selecionado corretamente."
+        
+        enq_limpo = enquadramento.lower()
+        
+        if "contagem" in enq_limpo:
             bits, report = tx_ce.enquadrar_contagem(bits)
         
-        elif "Bytes" in enquadramento:
+        elif "bytes" in enq_limpo:
             bits, report = tx_ce.enquadrar_bytes_flag(bits)
 
+        elif "bits" in enq_limpo:
+            bits, report = tx_ce.enquadrar_bits_flag(bits)
+        
         historico["report_enquadramento_tx"] = report
         return bits
 

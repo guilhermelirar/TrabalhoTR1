@@ -37,6 +37,7 @@ class JanelaSimulador(Gtk.Window):
             "Tipo de Enquadramento": [
                 "Contagem de Caracteres",
                 "Inserção de Bytes",
+                "Inserção de Bits"
             ],
             "Detecção/Correção de Erros": ["Bit de Paridade", "CRC-32"],
             "Modulação": [
