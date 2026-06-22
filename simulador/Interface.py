@@ -39,7 +39,8 @@ class JanelaSimulador(Gtk.Window):
                 "Inserção de Bytes",
                 "Inserção de Bits"
             ],
-            "Detecção/Correção de Erros": ["Bit de Paridade", "CRC-32"],
+            "Detecção de Erros": ["Bit de Paridade", "Checksum", "CRC-32"],
+            "Correção de Erros": ["Nenhuma", "Hamming"],
             "Modulação": [
                 "NRZ Polar",
                 "Manchester",
@@ -70,8 +71,8 @@ class JanelaSimulador(Gtk.Window):
     def _setup_spinbutton(self, box):
         campos_numericos = {
             "Tamanho Máximo do Quadro": (1024, 64, 4096, 64),
-            "Desvio Padrão do Ruído (σ)": (0.5, 0.0, 5.0, 0.1),
-            "Média do Ruído": (0.0, 0.0, 2.5, 0.1),
+            "Desvio Padrão do Ruído (σ)": (0.5, 0.0, 10.0, 0.1),
+            "Média do Ruído": (0.0, 0.0, 5.0, 0.1),
         }
 
         caixa_ruido_lado_a_lado = Gtk.Box(
@@ -204,6 +205,12 @@ class JanelaSimulador(Gtk.Window):
                     .get_active_text(),
 
             "modulacao": self.combos["Modulação"]\
+                    .get_active_text(),
+            
+            "detec_erro": self.combos["Detecção de Erros"]\
+                    .get_active_text(),
+
+            "corr_erro": self.combos["Correção de Erros"]\
                     .get_active_text(),
 
             "tam_quadro": int(self.seletores["Tamanho Máximo do Quadro"]\
