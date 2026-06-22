@@ -53,6 +53,10 @@ class Tx:
         if "paridade" in detec_limpo:
             bits, report_err = tx_ce.aplicar_paridade(bits)
 
+        elif "checksum" in detec_limpo:
+            bits, report_err = tx_ce.aplicar_checksum(bits)
+            pass
+
         historico["report_erro_tx"] = report_err
         return bits
 

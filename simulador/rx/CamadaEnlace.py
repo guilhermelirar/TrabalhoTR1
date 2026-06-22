@@ -194,3 +194,52 @@ def verificar_paridade(bits):
     report = "\n".join(report_l) 
 
     return bits_o, report
+
+
+def verificar_checksum(bits):
+    STEP = 8
+    
+    if len(bits) < STEP:
+        return [], "[ERRO] Fluxo de bits muito curto para conter Checksum"
+
+    # byte de checksum é isolado
+    bits_dados = bits[:-STEP]
+    bits_checksum_recebido = bits[-STEP:]
+    
+    report_l = ["(Checksum)"]
+    report_str_count = 0
+    report_str = ""
+    
+    soma_total = 0
+
+    for i in range(0, len(bits_dados), STEP):
+        janela = bits_dados[i:(min(len(bits_dados), i + STEP))]
+        
+        valor_byte = int("".join(map(str, janela)), 2)
+        soma_total += valor_byte
+
+        if report_str_count == 4:
+            report_l.append(report_str)
+            report_str = f"{bits_para_hexa(janela)} "
+            report_str_count = 1
+        else:
+            report_str_count += 1
+            report_str += f"{bits_para_hexa(janela)} "
+
+    checksum_calculado = (~(soma_total % 256)) & 0xFF
+    checksum_recebido_val = int("".join(map(str, bits_checksum_recebido)), 2)
+
+    if checksum_calculado == checksum_recebido_val:
+        report_str += f"[OK CS: {bits_para_hexa(bits_checksum_recebido)}]"
+        report_l.append(report_str)
+        bits_o = bits_dados  
+    else:
+        report_str += f"[ERRO CS: REC {bits_para_hexa(bits_checksum_recebido)}"\
+                f"!= EXP {checksum_calculado:02X}h]"
+
+        report_l.append(report_str)
+        bits_o = []  
+
+    report = "\n".join(report_l) 
+
+    return bits_o, report

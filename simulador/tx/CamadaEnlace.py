@@ -163,3 +163,42 @@ def aplicar_paridade(bits):
     report = "\n".join(report_l) 
 
     return bits_o, report
+
+
+def aplicar_checksum(bits):
+    STEP = 8 # soma 8 em 8
+    bits_o = bits.copy() # para manter original 
+
+    report_l = ["Aplicação de Checksum: "]
+    report_str_count = 0
+    report_str = ""
+    
+    soma_total = 0
+    
+    # calcular soma dos valores de byte dado por cada bloco
+    for i in range(0, len(bits), STEP):
+        janela = bits[i:(min(len(bits), i + STEP))]
+        
+        valor_byte = int("".join(map(str, janela)), 2)
+        soma_total += valor_byte
+
+        if report_str_count == 4:
+            report_l.append(report_str)
+            report_str = f"{bits_para_hexa(janela)} "
+            report_str_count = 1
+        else:
+            report_str_count += 1
+            report_str += f"{bits_para_hexa(janela)} "
+
+    # lista de bits 8 menos significativos do complemento da soma
+    checksum_val = (~(soma_total % 256)) & 0xFF
+    checksum_bits = [int(b) for b in f"{checksum_val:08b}"]
+    
+    # relatório
+    report_str += f"[CS: {bits_para_hexa(checksum_bits)}]"
+    report_l.append(report_str)
+    report = "\n".join(report_l) 
+
+    bits_o.extend(checksum_bits)
+
+    return bits_o, report

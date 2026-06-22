@@ -31,7 +31,7 @@ class Rx:
         # --- CAMADA FÍSICA ---
         modulacao = config.get("modulacao", "NRZ Polar")
         enquadramento = config.get("enquadramento", "Contagem de Caracteres")
-        detec = config.get("Detecção de Erros", "Bit de Paridade")
+        detec = config.get("detec_erro", "Bit de Paridade")  
         amostras = []
         bitstream = []
 
@@ -58,6 +58,9 @@ class Rx:
 
         if "Paridade" in detec: 
             bits_uteis, report_detec = rx_ce.verificar_paridade(bitstream)
+        elif "Checksum" in detec:
+            bits_uteis, report_detec = rx_ce.verificar_checksum(bitstream)
+            pass
 
         if "Contagem" in enquadramento: 
             bits_uteis, report_rx = rx_ce.desenquadrar_contagem(bits_uteis)
