@@ -2,7 +2,6 @@ from logging import shutdown
 import threading
 from rx import CamadaFisica as rx_cf
 from rx import CamadaEnlace as rx_ce  # <--- IMPORTADO AQUI
-from gi.repository import GLib
 
 class Rx:
     def __init__(self, canal, shutdown_event: threading.Event, 
@@ -52,7 +51,7 @@ class Rx:
         historico["sinal_canal"] = amostras[:10000]
 
 
-        # --- CAMADA DE ENLACE (COMPLETADO) ---
+        # --- CAMADA DE ENLACE  ---
         report_rx = "Desenquadramento não ocorreu"
         bits_uteis = []
 
@@ -65,13 +64,12 @@ class Rx:
         elif "Bits" in enquadramento:
             bits_uteis, report_rx = rx_ce.\
                     desenquadrar_bits_inseridos(bitstream)
-        # Guarda o relatório do receptor no histórico para a interface ler
+
+        # para exibir na interface
         historico["report_enquadramento_rx"] = report_rx 
 
-        # --- CAMADA DE APLICAÇÃO (CONVERSÃO FINAL) ---
-        # Converte os bits limpos/desenquadrados de volta para string legível
         try:
-            # Agrupa os bits de 8 em 8, transforma em caracteres e junta tudo
+            # converte em caracteres 
             bytes_list = [bits_uteis[i:i+8] 
                           for i in range(0, len(bits_uteis), 8)]
             mensagem_final = "".join(chr(int("".join(map(str, b)), 2)) 
