@@ -202,3 +202,48 @@ def aplicar_checksum(bits):
     bits_o.extend(checksum_bits)
 
     return bits_o, report
+
+def aplicar_crc32(bits):
+    bits_o = bits.copy()
+    report_l = ["Aplicação de CRC-32: "]
+    
+    # agrupar em bytes
+    STEP = 8
+    report_str = ""
+    report_str_count = 0
+    for i in range(0, len(bits), STEP):
+        janela = bits[i:min(len(bits), i + STEP)]
+        if report_str_count == 4:
+            report_l.append(report_str)
+            report_str = f"{bits_para_hexa(janela)} "
+            report_str_count = 1
+        else:
+            report_str_count += 1
+            report_str += f"{bits_para_hexa(janela)} "
+
+    # usando inteiros
+    crc = 0xFFFFFFFF
+    for i in range(0, len(bits), 8):
+        janela = bits[i:i+8]
+        while len(janela) < 8:
+            janela.append(0)
+        byte_val = int("".join(map(str, janela)), 2)
+        
+        crc ^= byte_val
+        for _ in range(8):
+            if crc & 1:
+                crc = (crc >> 1) ^ 0xEDB88320 
+            else:
+                crc >>= 1
+                
+    crc_final = crc ^ 0xFFFFFFFF
+    
+    crc_bits = [int(b) for b in f"{crc_final:032b}"]
+    
+    bits_o.extend(crc_bits)
+    
+    report_str += f"[CRC: {bits_para_hexa(crc_bits)}]"
+    report_l.append(report_str)
+    report = "\n".join(report_l)
+    
+    return bits_o, report

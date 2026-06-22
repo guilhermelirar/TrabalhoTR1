@@ -243,3 +243,57 @@ def verificar_checksum(bits):
     report = "\n".join(report_l) 
 
     return bits_o, report
+
+
+def verificar_crc32(bits):
+    if len(bits) < 32:
+        return [], "[ERRO] Fluxo muito curto para conter CRC-32"
+        
+    bits_dados = bits[:-32]
+    bits_crc_recebido = bits[-32:]
+    
+    report_l = ["Verificação de CRC-32: "]
+    STEP = 8
+    report_str = ""
+    report_str_count = 0
+    
+    # Mostra os bytes de dados no relatório
+    for i in range(0, len(bits_dados), STEP):
+        janela = bits_dados[i:min(len(bits_dados), i + STEP)]
+        if report_str_count == 4:
+            report_l.append(report_str)
+            report_str = f"{bits_para_hexa(janela)} "
+            report_str_count = 1
+        else:
+            report_str_count += 1
+            report_str += f"{bits_para_hexa(janela)} "
+            
+    # Recalcula o CRC sobre os dados recebidos para checagem
+    crc = 0xFFFFFFFF
+    for i in range(0, len(bits_dados), 8):
+        janela = bits_dados[i:i+8]
+        while len(janela) < 8:
+            janela.append(0)
+        byte_val = int("".join(map(str, janela)), 2)
+        
+        crc ^= byte_val
+        for _ in range(8):
+            if crc & 1:
+                crc = (crc >> 1) ^ 0xEDB88320
+            else:
+                crc >>= 1
+    crc_final = crc ^ 0xFFFFFFFF
+    
+    crc_recebido_val = int("".join(map(str, bits_crc_recebido)), 2)
+    
+    if crc_final == crc_recebido_val:
+        report_str += f"[OK CRC: {bits_para_hexa(bits_crc_recebido)}]"
+        report_l.append(report_str)
+        bits_o = bits_dados
+    else:
+        report_str += f"[ERRO CRC: REC {bits_para_hexa(bits_crc_recebido)} != EXP {crc_final:08X}h]"
+        report_l.append(report_str)
+        bits_o = [] 
+        
+    report = "\n".join(report_l)
+    return bits_o, report
