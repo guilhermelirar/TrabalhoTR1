@@ -28,24 +28,32 @@ class Tx:
 
         return modulador_fn(bitstream)
 
-    def enlace(self, msg, enquadramento, historico):
+    def enlace(self, msg, enquadramento, detec_erro, historico):
         bits = tx_ce.str_to_bitstream(msg)
         
         
-        report = "ERRO: Nenhum enquadramento foi selecionado corretamente."
+        report_enq = "ERRO: Nenhum enquadramento foi selecionado corretamente."
         
         enq_limpo = enquadramento.lower()
+        detec_limpo = detec_erro.lower()
         
         if "contagem" in enq_limpo:
-            bits, report = tx_ce.enquadrar_contagem(bits)
+            bits, report_enq = tx_ce.enquadrar_contagem(bits)
         
         elif "bytes" in enq_limpo:
-            bits, report = tx_ce.enquadrar_bytes_flag(bits)
+            bits, report_enq = tx_ce.enquadrar_bytes_flag(bits)
 
         elif "bits" in enq_limpo:
-            bits, report = tx_ce.enquadrar_bits_flag(bits)
+            bits, report_enq = tx_ce.enquadrar_bits_flag(bits)
         
-        historico["report_enquadramento_tx"] = report
+        historico["report_enquadramento_tx"] = report_enq
+
+        report_err = "Nenhuma detecção de erro foi aplicada"
+        
+        if "paridade" in detec_limpo:
+            bits, report_err = tx_ce.aplicar_paridade(bits)
+
+        historico["report_erro_tx"] = report_err
         return bits
 
     def camada_fisica(self, bitstream, modulacao, historico):
@@ -70,8 +78,9 @@ class Tx:
         modulacao = config.get("modulacao", "NRZ Polar")
         enquadramento = config.get("enquadramento", 
                                    "Contagem de Caracteres")
+        detec_erro = config.get("detec_erro") 
 
-        bitstream = self.enlace(msg, enquadramento, historico)
+        bitstream = self.enlace(msg, enquadramento, detec_erro, historico)
         sinal = self.camada_fisica(bitstream, modulacao, historico)
         
         if not self.shutdown_event.is_set():

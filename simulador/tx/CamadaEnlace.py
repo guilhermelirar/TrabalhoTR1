@@ -30,7 +30,7 @@ def bits_para_hexa(lista_de_bits):
             hexa_str.append(f"{num:02X}h")
         
         else:
-            hexa_str.append(f"{num:07b}b")
+            hexa_str.append(f"{num}d")
 
     return " ".join(hexa_str)
 
@@ -136,20 +136,30 @@ def enquadrar_bits_flag(bits: list[int], num_bytes: int = 4):
     return bitstream_out, report
 
 def aplicar_paridade(bits):
-    STEP = 8 # bits onde a paridade deve ser inserida
+    STEP = 8 
     bits_o = []
 
-    report_l = []
+    report_l = ["Aplicação de paridade: "]
+    report_str_count = 0
+    report_str = ""
     for i in range(0, len(bits), STEP):
-        janela = bits[i:(min(len(bits), STEP))]
+        janela = bits[i:(min(len(bits), i + STEP))]
         n_1s = sum(bit for bit in janela if bit == 1)
         
         p = n_1s % 2 # bit de paridade
+
+        if report_str_count == 4:
+            report_l.append(report_str)
+            report_str = f"{bits_para_hexa(janela)} ({p}) "
+            report_str_count = 1
+        else:
+            report_str_count += 1
+            report_str += f"{bits_para_hexa(janela)} ({p}) "
+
         janela.append(p) # se resto 0, adiciona 0 (par), cc, 1
         bits_o.extend(janela)
 
-        report_l.append(f"{bits_para_hexa(janela)} ({p})")
-
+    report_l.append(report_str)
     report = "\n".join(report_l) 
 
     return bits_o, report
