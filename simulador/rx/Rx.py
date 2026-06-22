@@ -61,7 +61,10 @@ class Rx:
             
         elif "Bytes" in enquadramento:
             bits_uteis, report_rx = rx_ce.desenquadrar_bytes_flag(bitstream)
-        
+
+        elif "Bits" in enquadramento:
+            bits_uteis, report_rx = rx_ce.\
+                    desenquadrar_bits_inseridos(bitstream)
         # Guarda o relatório do receptor no histórico para a interface ler
         historico["report_enquadramento_rx"] = report_rx 
 

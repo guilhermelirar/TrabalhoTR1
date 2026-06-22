@@ -114,3 +114,48 @@ def desenquadrar_bytes_flag(bitstream: list[int]):
 
     report = "\n".join(report_l)
     return bitstream_out, report
+
+def desenquadrar_bits_inseridos(bitstream: list[int]):
+    FLAG = [0, 1, 1, 1, 1, 1, 1, 0]
+    
+    bitstream_out = []
+    i = 0
+    bitstream_len = len(bitstream)
+    report_l = []
+
+    while i < bitstream_len:
+        if bitstream[i:i+8] == FLAG:
+            report_str = "[FLAG] "
+            i += 8 
+            
+            quadro_recuperado = []
+            contador_1 = 0
+            
+            while i < bitstream_len:
+                if bitstream[i:i+8] == FLAG:
+                    report_str += bits_para_hexa(quadro_recuperado) + " [FLAG]"
+                    i += 8
+                    break
+                
+                # Processamento bit a bit com remoção do bit stuffing
+                bit = bitstream[i]
+                quadro_recuperado.append(bit)
+                bitstream_out.append(bit)
+                i += 1
+                
+                if bit == 1:
+                    contador_1 += 1
+                    if contador_1 == 5:
+                        if i < bitstream_len and bitstream[i] == 0:
+                            i += 1 # avança o indice sem salvar o 0 atual 
+
+                        contador_1 = 0
+                else:
+                    contador_1 = 0
+
+            report_l.append(report_str)
+        else:
+            i += 1
+
+    report = "\n".join(report_l)
+    return bitstream_out, report
