@@ -31,7 +31,7 @@ class Rx:
         # --- CAMADA FÍSICA ---
         modulacao = config.get("modulacao", "NRZ Polar")
         enquadramento = config.get("enquadramento", "Contagem de Caracteres")
-
+        detec = config.get("Detecção de Erros", "Bit de Paridade")
         amostras = []
         bitstream = []
 
@@ -53,19 +53,24 @@ class Rx:
 
         # --- CAMADA DE ENLACE  ---
         report_rx = "Desenquadramento não ocorreu"
+        report_detec = "Detecão não ocorreu"
         bits_uteis = []
 
+        if "Paridade" in detec: 
+            bits_uteis, report_detec = rx_ce.verificar_paridade(bitstream)
+
         if "Contagem" in enquadramento: 
-            bits_uteis, report_rx = rx_ce.desenquadrar_contagem(bitstream)
+            bits_uteis, report_rx = rx_ce.desenquadrar_contagem(bits_uteis)
             
         elif "Bytes" in enquadramento:
-            bits_uteis, report_rx = rx_ce.desenquadrar_bytes_flag(bitstream)
+            bits_uteis, report_rx = rx_ce.desenquadrar_bytes_flag(bits_uteis)
 
         elif "Bits" in enquadramento:
             bits_uteis, report_rx = rx_ce.\
-                    desenquadrar_bits_inseridos(bitstream)
+                    desenquadrar_bits_inseridos(bits_uteis)
 
         # para exibir na interface
+        historico["report_erro_rx"] = report_detec
         historico["report_enquadramento_rx"] = report_rx 
 
         try:

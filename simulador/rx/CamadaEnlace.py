@@ -166,20 +166,30 @@ def verificar_paridade(bits):
     bits_o = []
 
     report_l = []
+    report_str_count = 0
+    report_str = ""
     for i in range(0, len(bits), STEP + 1):
-        fim = min(len(bits), STEP + 1)
+        fim = min(len(bits), i + STEP + 1)
         janela = bits[i:fim]
         n_1s = sum(bit for bit in janela if bit == 1)
         
         p = n_1s % 2 # bit de paridade
-        
+
+        byte_report = ""
         if p == 0:
-            print("Paridade correta")
-            report_l.append(f"[OK] {bits_para_hexa(janela[:fim-1])}")
-            bits_o.extend(janela[:fim-1])
+            byte_report = f"[OK] {bits_para_hexa(janela[:STEP])}"
+            bits_o.extend(janela[:STEP])
 
         else:
-            report_l.append(f"[ERRO] {bits_para_hexa(janela[i:fim])}")
+            byte_report = f"[ERRO] {bits_para_hexa(janela[:STEP])}"
+
+        if report_str_count < 4:
+            report_str_count += 1 
+            report_str += byte_report 
+        else: 
+            report_l.append(report_str)
+            report_str = byte_report
+            report_str_count = 1
         
     report = "\n".join(report_l) 
 
