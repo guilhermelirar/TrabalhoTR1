@@ -247,3 +247,41 @@ def aplicar_crc32(bits):
     report = "\n".join(report_l)
     
     return bits_o, report
+
+def aplicar_hamming(bits):
+    bits_o = []
+    report_l = ["Aplicação de Hamming (7,4)"]
+    report_str = ""
+    report_str_count = 0
+
+    # 4 em 4 bytes para inserir 3
+    for i in range(0, len(bits), 4):
+        janela = bits[i:i+4]
+        while len(janela) < 4:
+            janela.append(0)
+            
+        d1, d2, d3, d4 = janela[0], janela[1], janela[2], janela[3]
+        
+        p1 = d1 ^ d2 ^ d4
+        p2 = d1 ^ d3 ^ d4
+        p3 = d2 ^ d3 ^ d4
+       
+        # bloco final
+        bloco_7bits = [p1, p2, d1, p3, d2, d3, d4]
+        bits_o.extend(bloco_7bits)
+        
+        if report_str_count == 4:
+            report_l.append(report_str)
+            report_str = f"{bits_para_hexa(janela)}"\
+                    f"->{p1}{p2}{d1}{p3}{d2}{d3}{d4}"
+            report_str_count = 1
+        else:
+            report_str_count += 1
+            report_str += f"{bits_para_hexa(janela)} ->"\
+                    f"Bloco({p1}{p2}{d1}{p3}{d2}{d3}{d4}) "
+            
+    report_l.append(report_str)
+    report = "\n".join(report_l)
+    return bits_o, report
+
+

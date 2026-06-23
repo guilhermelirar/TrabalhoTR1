@@ -1,4 +1,3 @@
-# simulador/rx/Tx.py
 import threading
 from tx import CamadaFisica as tx_cf
 from tx import CamadaEnlace as tx_ce
@@ -28,36 +27,52 @@ class Tx:
 
         return modulador_fn(bitstream)
 
-    def enlace(self, msg, enquadramento, detec_erro, historico):
+    def enlace(self, msg, enquadramento, detec_erro, corr_erro, historico):
+        # Transforma o texto em bitstream inicial
         bits = tx_ce.str_to_bitstream(msg)
         
+        enq_limpo = str(enquadramento).lower()
+        detec_limpo = str(detec_erro).lower() if detec_erro else "nenhum"
+        corr_limpo = str(corr_erro).lower() if corr_erro else "nenhum"
         
+        # --- 1. PASSO: ENQUADRAMENTO ---
         report_enq = "ERRO: Nenhum enquadramento foi selecionado corretamente."
-        
-        enq_limpo = enquadramento.lower()
-        detec_limpo = detec_erro.lower()
-        
         if "contagem" in enq_limpo:
             bits, report_enq = tx_ce.enquadrar_contagem(bits)
-        
         elif "bytes" in enq_limpo:
             bits, report_enq = tx_ce.enquadrar_bytes_flag(bits)
-
         elif "bits" in enq_limpo:
             bits, report_enq = tx_ce.enquadrar_bits_flag(bits)
-        
+            
         historico["report_enquadramento_tx"] = report_enq
 
-        report_err = "Nenhuma detecção de erro foi aplicada"
+        # --- 2. PASSO: TRATAMENTO DE ERROS (DETECÇÃO + CORREÇÃO) ---
+        reports_erro_lista = []
         
-        if "paridade" in detec_limpo:
-            bits, report_err = tx_ce.aplicar_paridade(bits)
-
+        if "hamming" in corr_limpo:
+            if "paridade" in detec_limpo:
+                detec_limpo = "crc"  
+                reports_erro_lista.append("[AVISO TX] Paridade alterada para CRC devido ao uso de Hamming.")
+        
+        if "hamming" in corr_limpo:
+            bits, rep_corr = tx_ce.aplicar_hamming(bits)
+            reports_erro_lista.append(rep_corr)
+            
+        if "paridade" in detec_limpo and "hamming" not in corr_limpo:
+            bits, rep_detec = tx_ce.aplicar_paridade(bits)
+            reports_erro_lista.append(rep_detec)
         elif "checksum" in detec_limpo:
-            bits, report_err = tx_ce.aplicar_checksum(bits)
-            pass
-
-        historico["report_erro_tx"] = report_err
+            bits, rep_detec = tx_ce.aplicar_checksum(bits)
+            reports_erro_lista.append(rep_detec)
+        elif "crc" in detec_limpo or "32" in detec_limpo:
+            bits, rep_detec = tx_ce.aplicar_crc32(bits)
+            reports_erro_lista.append(rep_detec)
+            
+        if not reports_erro_lista:
+            reports_erro_lista.append(
+                    "Nenhum mecanismo de controle de erro aplicado.")
+            
+        historico["report_erro_tx"] = "\n".join(reports_erro_lista)
         return bits
 
     def camada_fisica(self, bitstream, modulacao, historico):
@@ -80,11 +95,11 @@ class Tx:
     def transmitir(self, config: dict, historico: dict):
         msg = config.get("mensagem", "Ola Mundo")
         modulacao = config.get("modulacao", "NRZ Polar")
-        enquadramento = config.get("enquadramento", 
-                                   "Contagem de Caracteres")
+        enquadramento = config.get("enquadramento", "Contagem de Caracteres")
         detec_erro = config.get("detec_erro") 
-
-        bitstream = self.enlace(msg, enquadramento, detec_erro, historico)
+        corr_erro = config.get("corr_erro", "Nenhum")  
+        bitstream = self.enlace(msg, enquadramento, 
+                                detec_erro, corr_erro, historico)
         sinal = self.camada_fisica(bitstream, modulacao, historico)
         
         if not self.shutdown_event.is_set():
@@ -93,5 +108,4 @@ class Tx:
             except Exception as e:
                 print(f"Erro no canal.put: {e}")
             
-            self.canal.buffer.put(None)   
-
+            self.canal.buffer.put(None)

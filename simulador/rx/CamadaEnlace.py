@@ -268,7 +268,6 @@ def verificar_crc32(bits):
             report_str_count += 1
             report_str += f"{bits_para_hexa(janela)} "
             
-    # Recalcula o CRC sobre os dados recebidos para checagem
     crc = 0xFFFFFFFF
     for i in range(0, len(bits_dados), 8):
         janela = bits_dados[i:i+8]
@@ -295,5 +294,58 @@ def verificar_crc32(bits):
         report_l.append(report_str)
         bits_o = [] 
         
+    report = "\n".join(report_l)
+    return bits_o, report
+
+def verificar_hamming(bits):
+    bits_o = []
+    report_l = ["Verificação/Correção de Hamming (7,4): "]
+    report_str = ""
+    report_str_count = 0
+    erros_corrigidos = 0
+    
+    # ler em passos de 7 bits
+    for i in range(0, len(bits), 7):
+        bloco = bits[i:i+7]
+        if len(bloco) < 7:
+            break  
+        
+        # bits de paridade
+        p1, p2, d1, p3, d2, d3, d4 = bloco[0], bloco[1],\
+                bloco[2], bloco[3], bloco[4], bloco[5], bloco[6]
+        
+        s1 = p1 ^ d1 ^ d2 ^ d4
+        s2 = p2 ^ d1 ^ d3 ^ d4
+        s3 = p3 ^ d2 ^ d3 ^ d4
+       
+        # posição do erro se houver
+        sindrome_pos = (s3 << 2) | (s2 << 1) | s1
+        
+        bloco_corrigido = bloco.copy()
+        status = "[OK]"
+        
+        if sindrome_pos != 0:
+            # erro de 1 bit encontrado
+            status = f"[CORR {sindrome_pos}]"
+            bloco_corrigido[sindrome_pos - 1] ^= 1
+            erros_corrigidos += 1
+            
+            p1, p2, d1, p3, d2, d3, d4 = bloco_corrigido[0],\
+                    bloco_corrigido[1], bloco_corrigido[2],\
+                    bloco_corrigido[3], bloco_corrigido[4],\
+                    bloco_corrigido[5], bloco_corrigido[6]
+            
+        dados_puros = [d1, d2, d3, d4]
+        bits_o.extend(dados_puros)
+        
+        if report_str_count == 4:
+            report_l.append(report_str)
+            report_str = f"{status} {bits_para_hexa(dados_puros)} "
+            report_str_count = 1
+        else:
+            report_str_count += 1
+            report_str += f"{status} {bits_para_hexa(dados_puros)} "
+            
+    report_l.append(report_str)
     report = "\n".join(report_l)
     return bits_o, report
