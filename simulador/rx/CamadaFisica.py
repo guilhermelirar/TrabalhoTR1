@@ -11,6 +11,17 @@ def demodularNRZ_Polar(amostras: list[float], volt_high: float = 5.0,
                      volt_low: float = -5.0, 
                      amostras_p_bit: int = 100) -> list[int]:
 
+    """
+    Demodula sinal NRZ polar e retorna bits extraídos
+    
+    Args:
+        amostras: lista de valores de Voltagem
+        volt_high: referência de valor máximo
+        volt_low: referencia do valor mínimo
+
+    Returns:
+        list: bits resultantes da demodulação
+    """
     limiar = (volt_high + volt_low)/2
 
     bitstream = []
@@ -32,10 +43,23 @@ def demodularNRZ_Polar(amostras: list[float], volt_high: float = 5.0,
 def demodularManchester(amostras: list[float], volt_high: float = 5.0, 
                      volt_low: float = -5.0, 
                      amostras_p_bit: int = 100) -> list[int]:
+    """
+    Demodula sinal Manchester polar e retorna bits extraídos
     
+    Args:
+        amostras: lista de valores de Voltagem
+        volt_high: referência de valor máximo
+        volt_low: referencia do valor mínimo
+
+    Returns:
+        list: bits resultantes da demodulação
+    """
+
+    # Obtém bits considerando sinal NRZ com metade da taxa de amostragem
     transitions = demodularNRZ_Polar(amostras, volt_high, volt_low, 
                                      amostras_p_bit//2)
 
+    # Dupla de bits (transição) determinam bits finais
     bitstream = []
     for i in range(0, len(transitions) - 1, 2):
         if transitions[i] == 1 and transitions[i+1] == 0:
@@ -47,7 +71,19 @@ def demodularManchester(amostras: list[float], volt_high: float = 5.0,
 
 def demodularBipolar(amostras: list[float], volt_high: float = 5.0, 
                      amostras_p_bit: int = 100) -> list[int]:
+    """
+    Demodula sinal Bipolar AMI e retorna bits extraídos
     
+    Args:
+        amostras: lista de valores de Voltagem
+        volt_high: referência de valor máximo
+        volt_low: referencia do valor mínimo
+
+    Returns:
+        list: bits resultantes da demodulação
+    """
+
+    # consideram módulo e interpreta como NRZ
     amostras = [abs(i) for i in amostras]
     bitstream = demodularNRZ_Polar(amostras, volt_high, 0.0, amostras_p_bit)
 
@@ -56,7 +92,20 @@ def demodularBipolar(amostras: list[float], volt_high: float = 5.0,
 def demodularASK(amostras: list[float], volt_high: float = 5.0, 
                  amostras_p_bit: int = 100) -> list[int]:
     bitstream = []
+    """
+    Demodula sinal ASK e retorna bits extraídos. 
+    Retifica o sinal e usa NRZ_Polar com referência 
+    na média do valor de uma senoide modificada
     
+    Args:
+        amostras: lista de valores de Voltagem
+        volt_high: referência de valor máximo
+        volt_low: referencia do valor mínimo
+
+    Returns:
+        list: bits resultantes da demodulação
+    """
+
     amostras_retificadas = [abs(x) for x in amostras]
     media_bit1 = 2 * volt_high / math.pi # média de senoide retificada
 
@@ -68,9 +117,23 @@ def demodularASK(amostras: list[float], volt_high: float = 5.0,
 def demodularFSK(amostras: list[float], 
                  volt_high: float = 5.0, amostras_p_bit: int = 100,
                  ciclos_f0 = 4, ciclos_f1 = 8):
+    """
+    Demodula sinal FSK e retorna bits extraídos
+    
+    Args:
+        amostras: lista de valores de Voltagem
+        volt_high: referência de valor máximo
+        ciclos_f0: ciclos do símbolo 0
+        ciclos_f1: ciclos do símbolo 1
+
+    Returns:
+        list: bits resultantes da demodulação
+    """
+
     import numpy as np
     bitstream = []
-    
+  
+    # construção das portadoras de referência
     t_bit_1 = np.linspace(0, 2 * np.pi * ciclos_f1, amostras_p_bit, 
                         endpoint=False)
     t_bit_0 = np.linspace(0, 2 * np.pi * ciclos_f0, amostras_p_bit, 
@@ -79,6 +142,8 @@ def demodularFSK(amostras: list[float],
     portadora_1 = volt_high * np.sin(t_bit_1) 
     portadora_0 = volt_high * np.sin(t_bit_0) 
 
+    # faz decisão com base em correlação da onda observada 
+    # com as portadoras de referência
     for inicio in range(0, len(amostras), amostras_p_bit):
 
         # bloco de amostras_p_bit
@@ -99,6 +164,18 @@ def demodularFSK(amostras: list[float],
 
 def demodularBPSK(amostras: list[float], volt_high = 5.0, 
                   amostras_p_simbolo = 100, ciclos_f = 4):
+    """
+    Demodula sinal NRZ polar e retorna bits extraídos
+    
+    Args:
+        amostras: lista de valores de Voltagem
+        volt_high: referência de valor máximo
+        ciclos_f: número de ciclos da senoide
+
+    Returns:
+        list: bits resultantes da demodulação
+    """   
+
     import numpy as np 
     bitstream = []
 
@@ -107,6 +184,7 @@ def demodularBPSK(amostras: list[float], volt_high = 5.0,
     # portadora referencia para bit 1 no BPSK
     portadora_ref = volt_high * np.cos(2 * np.pi * ciclos_f * t)
 
+    # decide com base na correlação
     for inicio in range(0, len(amostras), amostras_p_simbolo):
         fim = inicio + amostras_p_simbolo
         janela = np.array(amostras[inicio:fim])
@@ -118,7 +196,7 @@ def demodularBPSK(amostras: list[float], volt_high = 5.0,
   
         if correlacao > 0:
             bitstream.append(1)
-        else: # fora de fase
+        else: # fora de fase, valores negativos multiplicam valores positivos
             bitstream.append(0)
     
     return bitstream
@@ -126,6 +204,17 @@ def demodularBPSK(amostras: list[float], volt_high = 5.0,
 
 def demodularQPSK(amostras: list[float], volt_high = 5.0, 
                   amostras_p_simbolo = 100, ciclos_f = 4):
+    """
+    Demodula sinal NRZ polar e retorna bits extraídos
+    
+    Args:
+        amostras: lista de valores de Voltagem
+        volt_high: referência de valor máximo
+        ciclos_f: número de ciclos da senoide
+
+    Returns:
+        list: bits resultantes da demodulação
+    """ 
     import numpy as np 
     bitstream = []
 
@@ -208,3 +297,4 @@ def demodular16QAM(amostras: list[float], volt_high: float = 5.0,
         bitstream.extend([bit0, bit1, bit2, bit3])
         
     return bitstream
+
