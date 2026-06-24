@@ -84,13 +84,13 @@ class Tx:
         elif modulacao == "16-QAM":
             amostras_p_bit = 25
 
-        obj_nrz_puro = tx_cf.modularNRZ_Polar(bitstream,
+        nrz_puro = tx_cf.modularNRZ_Polar(bitstream,
                                               amostras_p_bit=amostras_p_bit,
                                               volt_low=0.) 
-        objeto_sinal = self.modular(modulacao, bitstream)
+        sinal_tx = self.modular(modulacao, bitstream)
         
-        historico["sinal_nrz_puro"] = obj_nrz_puro.amostras.tolist()[:10000]
-        return objeto_sinal
+        historico["sinal_nrz_puro"] = nrz_puro.tolist()[:10000]
+        return sinal_tx 
 
     def transmitir(self, config: dict, historico: dict):
         msg = config.get("mensagem", "Ola Mundo")

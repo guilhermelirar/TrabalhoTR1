@@ -156,3 +156,55 @@ def demodularQPSK(amostras: list[float], volt_high = 5.0,
         bitstream.append(1 if correlacao_I > 0 else 0)
 
     return bitstream
+
+
+def demodular16QAM(amostras: list[float], volt_high: float = 5.0, 
+                   amostras_p_simbolo: int = 100, ciclos_p_bit: int = 4):
+    import numpy as np
+    from math import sqrt
+    
+    bitstream = []
+    
+    # base de tempo usada na modulação
+    t_simbolo = np.linspace(0, 2 * np.pi * ciclos_p_bit, 
+                            amostras_p_simbolo, 
+                            endpoint=False)
+    
+    # portadoras de referência para cálculo de correlação
+    referencia_I = volt_high * np.cos(t_simbolo)
+    referencia_Q = -volt_high * np.sin(t_simbolo)
+    
+    # ganho da correlação (integral de cos^2) para normalizar o sinal
+    fator_escala = (volt_high ** 2) * (amostras_p_simbolo / 2)
+
+    # limiar entre duas amplitudes de cada canal
+    # ~0,47
+    limiar_amplitude = (1 / sqrt(2) + 1 / (3 * sqrt(2))) / 2
+    
+    for inicio in range(0, len(amostras), amostras_p_simbolo):
+        janela = np.array(amostras[inicio:inicio + amostras_p_simbolo])
+        
+        if len(janela) < amostras_p_simbolo:
+            continue
+            
+        correlacao_I = np.sum(janela * referencia_I)
+        correlacao_Q = np.sum(janela * referencia_Q)
+        
+        coord_i = correlacao_I / fator_escala
+        coord_q = correlacao_Q / fator_escala
+        
+        # 3. Decisão dos bits com base nos limiares
+        
+        # ---- CANAL I (Bits 0 e 2) ----
+        # define sinal
+        bit0 = 1 if coord_i > 0 else 0
+        # define amplitude
+        bit2 = 1 if abs(coord_i) > limiar_amplitude else 0
+        
+        # ---- CANAL Q (Bits 1 e 3) ----
+        bit1 = 1 if coord_q > 0 else 0
+        bit3 = 1 if abs(coord_q) > limiar_amplitude else 0
+        
+        bitstream.extend([bit0, bit1, bit2, bit3])
+        
+    return bitstream

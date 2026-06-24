@@ -1,7 +1,6 @@
 #./simulador/modelos/Canal.py
 
 from queue import Queue
-from modelos.Sinal import Sinal
 import numpy as np
 
 class Canal:
@@ -14,10 +13,10 @@ class Canal:
                                 scale=self.desvio_ruido, 
                                 size = size)
 
-    def put(self, sinal: Sinal):
-        for i in range(0, len(sinal.amostras), sinal.amostras_p_bit):
-            niveis = sinal.amostras[i:(i+sinal.amostras_p_bit)]
-
+    def put(self, sinal: np.ndarray):
+        STEP = 100 # número de amostras 
+        for i in range(0, len(sinal), STEP):
+            niveis = sinal[i:(i+STEP)]
             sinal_ruidoso = self._ruido(len(niveis)) + niveis
             self.buffer.put(sinal_ruidoso)
 

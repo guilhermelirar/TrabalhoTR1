@@ -1,11 +1,9 @@
 import numpy as np
 from math import sqrt
 
-from modelos.Sinal import Sinal
-
 def modularNRZ_Polar(bitstream: list[int], volt_high: float = 5.0, 
                      volt_low: float = -5.0, 
-                     amostras_p_bit: int = 100) -> Sinal:
+                     amostras_p_bit: int = 100) -> np.ndarray:
     """
     Retorna objeto de Sinal com forma de onda NRZ 
 
@@ -24,15 +22,11 @@ def modularNRZ_Polar(bitstream: list[int], volt_high: float = 5.0,
     # traduzindo para volt_high e volt_low
     valores = np.where(bits > 0, volt_high, volt_low)
 
-    return Sinal(
-            np.repeat(valores, amostras_p_bit), 
-            amostras_p_bit,
-            is_digital=True
-    )
+    return np.repeat(valores, amostras_p_bit) 
 
 def modularManchester(bitstream: list[int], volt_high: float = 5.0, 
                      volt_low: float = -5.0, 
-                     amostras_p_bit: int = 100) -> Sinal:
+                     amostras_p_bit: int = 100) -> np.ndarray:
     """
     Retorna objeto de Sinal com forma de onda Manchester, onde 
     as transições 1 -> 0 representam 1 lógico, e 0 -> 1, 0 lógico,
@@ -57,16 +51,12 @@ def modularManchester(bitstream: list[int], volt_high: float = 5.0,
     # unindo metades (transições representam valores)
     valores = np.column_stack((m1, m2)).flatten()
 
-    return Sinal(
-        np.repeat(valores, amostras_p_bit//2),
-        amostras_p_bit,
-        is_digital=True
-    )
+    return np.repeat(valores, amostras_p_bit//2)
        
 
 def modularBipolar(bitstream: list[int], volt_high: float = 5.0, 
                      volt_low: float = -5.0, 
-                     amostras_p_bit: int = 100) -> Sinal:
+                     amostras_p_bit: int = 100) -> np.ndarray:
     """
     Retorna objeto de Sinal com forma de onda Bipolar, onde 0 V 
     representa o 0 lógico, e os valores volt_high, e volt_low
@@ -94,14 +84,10 @@ def modularBipolar(bitstream: list[int], volt_high: float = 5.0,
         else:
             niveis.append(0.0)
 
-    return Sinal(
-        np.repeat(niveis, amostras_p_bit),
-        amostras_p_bit,
-        is_digital=True
-    )
+    return np.repeat(niveis, amostras_p_bit)
        
 def modularASK(bitstream: list[int], volt_high: float = 5.0, 
-               amostras_p_bit: int = 100, ciclos_p_bit: int = 4) -> Sinal:
+               amostras_p_bit: int = 100, ciclos_p_bit: int = 4) -> np.ndarray:
     """
     Retorna objeto de Sinal com modulação por amplitude, em que 
     o sinal corresponde à uma senoide de amplitude volt_high enquanto 
@@ -128,17 +114,12 @@ def modularASK(bitstream: list[int], volt_high: float = 5.0,
             niveis.extend(volt_high * np.sin(t_bit))
         else:
             niveis.extend(np.zeros(amostras_p_bit))
-
-    return Sinal(
-        np.array(niveis),
-        amostras_p_bit,
-        is_digital=False
-    )
-       
+    
+    return np.array(niveis)   
 
 def modularPSK(bitstream: list[int], volt_high: float = 5.0, 
                 amostras_p_simbolo: int = 100, ciclos_p_bit: int = 4,
-               bits_por_simbolo: int = 1) -> Sinal: 
+               bits_por_simbolo: int = 1) -> np.ndarray: 
     """
     Retorna objeto de Sinal com modulação por Phase Shift Keying, 
     em que  o sinal corresponde à uma senoide com símbolo codificado
@@ -183,15 +164,10 @@ def modularPSK(bitstream: list[int], volt_high: float = 5.0,
 
         niveis.extend(canal_i + canal_q)
         
-    return Sinal(
-            np.array(niveis),
-            amostras_p_simbolo, 
-            is_digital=False
-            )
-
+    return np.array(niveis)
 
 def modular16QAM(bitstream: list[int], volt_high: float = 5.0, 
-                amostras_p_simbolo: int = 100, ciclos_p_bit: int = 4) -> Sinal: 
+                amostras_p_simbolo: int = 100, ciclos_p_bit: int = 4): 
     """
     Retorna objeto de Sinal com modulação por 16-QAM, 
     em que  o sinal corresponde à uma senoide com símbolo codificado
@@ -235,16 +211,12 @@ def modular16QAM(bitstream: list[int], volt_high: float = 5.0,
 
         niveis.extend(canal_i + canal_q)
         
-    return Sinal(
-            np.array(niveis),
-            amostras_p_simbolo, 
-            is_digital=False
-            )
+    return np.array(niveis)
 
 
 def modularFSK(bitstream: list[int], volt_high: float = 5.0, 
                amostras_p_bit: int = 100,
-               ciclos_f0 = 4, ciclos_f1 = 8) -> Sinal:
+               ciclos_f0 = 4, ciclos_f1 = 8) -> np.ndarray:
     """
     Retorna objeto de Sinal com modulação por frequência 
 
@@ -272,9 +244,5 @@ def modularFSK(bitstream: list[int], volt_high: float = 5.0,
         else:
             niveis.extend(volt_high * np.sin(t_bit_0))
 
-    return Sinal(
-        np.array(niveis),
-        amostras_p_bit,
-        is_digital=False
-    )
+    return np.array(niveis)
 

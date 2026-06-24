@@ -18,7 +18,8 @@ class Rx:
                 "ASK": rx_cf.demodularASK,
                 "FSK": rx_cf.demodularFSK,
                 "BPSK": rx_cf.demodularBPSK,
-                "QPSK": rx_cf.demodularQPSK
+                "QPSK": rx_cf.demodularQPSK,
+                "16-QAM": rx_cf.demodular16QAM
                 }
 
         demodulador_fn = demoduladores.get(modulacao, None)
