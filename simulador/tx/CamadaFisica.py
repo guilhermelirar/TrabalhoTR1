@@ -1,26 +1,26 @@
 import numpy as np
 from math import sqrt
 
-def modularNRZ_Polar(bitstream: list[int], volt_high: float = 5.0, 
+def modularNRZ_Polar(bits: list[int], volt_high: float = 5.0, 
                      volt_low: float = -5.0, 
                      amostras_p_bit: int = 100) -> np.ndarray:
     """
-    Retorna objeto de Sinal com forma de onda NRZ 
+    Implementa modulação Non Return to Zero
 
     Args:
-        bitstream: lista de inteiros que representam os bits do sinal 
+        bits: lista de bits 
         volt_high: máximo de energia do sinal 
         volt_low: mínimo de energia do sinal 
         amostras_p_bit: quantidade de amostras para representar um único bit
 
     Returns:
-        Sinal: objeto sinal com as amostras moduladas para o NRZ
+        np.ndarray: objeto de numpy modulado com valores de energia (V) 
     """
 
-    bits = np.array(bitstream)  # usando numpy
+    bits_np = np.array(bits) 
 
     # traduzindo para volt_high e volt_low
-    valores = np.where(bits > 0, volt_high, volt_low)
+    valores = np.where(bits_np > 0, volt_high, volt_low)
 
     return np.repeat(valores, amostras_p_bit) 
 
@@ -39,7 +39,7 @@ def modularManchester(bitstream: list[int], volt_high: float = 5.0,
         amostras_p_bit: quantidade de amostras para representar um único bit
 
     Returns:
-        Sinal: objeto sinal com as amostras moduladas para o Manchester
+        np.ndarray: objeto do numpy modulado com valores de energia (V) 
     """
 
     bits = np.array(bitstream)
@@ -69,7 +69,7 @@ def modularBipolar(bitstream: list[int], volt_high: float = 5.0,
         amostras_p_bit: quantidade de amostras para representar um único bit
 
     Returns:
-        Sinal: objeto sinal com as amostras moduladas para Bipolar
+        sinal: objeto do numpy modulado com valores de energia (V) 
     """
 
     niveis = []
@@ -100,7 +100,7 @@ def modularASK(bitstream: list[int], volt_high: float = 5.0,
         ciclos_p_bit: número de ciclos da onda por bit
 
     Returns:
-        Sinal: objeto sinal com as amostras moduladas para ASK
+        sinal: objeto do numpy modulado com valores de energia (V) 
     """
 
     niveis = []
@@ -132,10 +132,9 @@ def modularPSK(bitstream: list[int], volt_high: float = 5.0,
         ciclos_p_bit: ciclos da senoide durante representação de 1 bit
 
     Returns:
-        Sinal: objeto sinal com as amostras moduladas para PSK. 
-
+        sinal: objeto do numpy modulado com valores de energia (V) 
     """
-   
+  
     tabela_psk = {
             (1,): (1.0, 0.),
             (0,): (-1.0, 0.),
@@ -180,10 +179,11 @@ def modular16QAM(bitstream: list[int], volt_high: float = 5.0,
         ciclos_p_bit: ciclos da senoide durante representação de 1 bit
 
     Returns:
-        Sinal: objeto sinal com as amostras moduladas para 16QAM. 
-
+        sinal: objeto do numpy modulado com valores de energia (V) 
     """
 
+    # bits 0 e 1 determinam sinal dos canais
+    # bits 2 e 3 determinam amplitude dos canais 
     def get_qam_coordinates(nibble):
         sign_i = 1 if nibble[0] == 1 else -1
         sign_q = 1 if nibble[1] == 1 else -1 
@@ -224,11 +224,11 @@ def modularFSK(bitstream: list[int], volt_high: float = 5.0,
         bitstream: lista de inteiros que representam os bits do sinal 
         volt_high: máximo de energia do sinal 
         amostras_p_bit: quantidade de amostras para representar um único bit
-        freq1: frequência do símbolo 0
-        freq2: frequência do símbolo 1
+        ciclos_f0: frequência do símbolo 0 em número de ciclos
+        ciclos_f1: frequência do símbolo 1 em número de ciclos
 
     Returns:
-        Sinal: objeto sinal com as amostras moduladas para FSK
+        sinal: objeto do numpy modulado com valores de energia (V) 
     """
 
     niveis = []
