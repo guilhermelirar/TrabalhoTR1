@@ -6,13 +6,16 @@ from tx.Tx import Tx
 from modelos.Canal import Canal
 
 class Simulador:
+    """
+    Classe que instancia Tx e Rx, e executa a simulação 
+    a partir de threads
+    """
     def __init__(self) -> None:
         self.canal = Canal()
         self.pool = ThreadPoolExecutor(max_workers=2)
         self.shutdown_event = threading.Event()
         
         self.historico = {
-            "sinal_tx": [],
             "sinal_canal": [],
             "mensagem_final": ""
         }

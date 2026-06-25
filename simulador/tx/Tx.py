@@ -52,8 +52,6 @@ class Tx:
         if "hamming" in corr_limpo:
             if "paridade" in detec_limpo:
                 detec_limpo = "crc"  
-                reports_erro_lista.append("[AVISO TX] Paridade alterada para CRC devido ao uso de Hamming.")
-        
         if "hamming" in corr_limpo:
             bits, rep_corr = tx_ce.aplicar_hamming(bits)
             reports_erro_lista.append(rep_corr)

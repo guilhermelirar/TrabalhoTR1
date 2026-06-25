@@ -11,6 +11,10 @@ class Rx:
         self.callback_fim = callback_fim
 
     def demodular(self, modulacao, amostras: list[float]):
+        """
+        Seleciona função da camada de enlace de acordo com a 
+        configuração
+        """
         demoduladores = {
                 "NRZ Polar": rx_cf.demodularNRZ_Polar,
                 "Manchester": rx_cf.demodularManchester,
@@ -23,13 +27,13 @@ class Rx:
                 }
 
         demodulador_fn = demoduladores.get(modulacao, None)
+        # Fallback
         if demodulador_fn is None:
             demodulador_fn = rx_cf.demodularNRZ_Polar
 
         return demodulador_fn(amostras)
 
     def receber(self, config: dict, historico: dict): 
-        # --- CAMADA FÍSICA ---
         modulacao = config.get("modulacao", "NRZ Polar")
         enquadramento = config.get("enquadramento", "Contagem de Caracteres")
         detec = config.get("detec_erro", "Nenhum")
@@ -38,6 +42,8 @@ class Rx:
         amostras = []
         bitstream = []
 
+        # --- CAMADA FÍSICA ---
+        # recebe os dados do canal
         while not self.shutdown_event.is_set():
             try:
                 janela_amostras = self.canal.buffer.get(timeout=.1)
@@ -48,6 +54,7 @@ class Rx:
             except:
                 continue
 
+        # para interface
         historico["sinal_canal"] = amostras[:10000]
 
         # --- CAMADA DE ENLACE ---
@@ -60,15 +67,10 @@ class Rx:
         
         bits_fase_erro = bitstream.copy()
 
-        # REGRA: Força o mesmo fallback do TX no receptor para as strings baterem
         if "hamming" in corr_limpo and "paridade" in detec_limpo:
             detec_limpo = "crc"
 
-        # =====================================================================
-        # PASSO 1: TRATAMENTO DE ERROS (Inverso exato do TX)
-        # =====================================================================
         
-        # A) Verifica primeiro a Detecção Externa (CRC ou Checksum)
         if "crc" in detec_limpo or "32" in detec_limpo:
             bits_fase_erro, rep_detec = rx_ce.verificar_crc32(bits_fase_erro)
             reports_erro_rx.append(rep_detec)
@@ -89,9 +91,6 @@ class Rx:
 
         bits_limpos = bits_fase_erro
 
-        # =====================================================================
-        # PASSO 2: DESENQUADRAMENTO (Em cima dos bits decodificados/corrigidos)
-        # =====================================================================
         if len(bits_limpos) > 0:
             if "contagem" in enq_limpo: 
                 bits_uteis, report_rx = rx_ce.desenquadrar_contagem(bits_limpos)
@@ -119,5 +118,4 @@ class Rx:
             print(f"Erro ao decodificar a mensagem final: {e}")
             historico["mensagem_final"] = "Erro de Decodificação"
 
-        # Notifica o fim da simulação passando o dicionário atualizado
         self.callback_fim(historico)
