@@ -1,7 +1,7 @@
 from Utils import *
 
 # === DESENQUADRAMENTO === #
-
+"""""
 def desenquadrar_contagem(bitstream: list[int]):
     bitstream_out = []
     i = 0
@@ -316,3 +316,130 @@ def verificar_hamming(bits):
     report_l.append(report_str)
     report = "\n".join(report_l)
     return bits_o, report
+"""""
+from Utils import *
+
+def corrigir_hamming(bits: list[int]):
+    report = ["Correção (hamming)"]
+    bits_o = []
+    erros_corrigidos = []
+    for bloco in slice_list(bits, 7):
+        if len(bloco) != 7:
+            bits_o.extend(bloco)
+            continue
+
+        p1, p2, d1, p3, d2, d3, d4 = bloco[0], bloco[1],\
+                bloco[2], bloco[3], bloco[4], bloco[5], bloco[6]
+        
+        s1 = p1 ^ d1 ^ d2 ^ d4
+        s2 = p2 ^ d1 ^ d3 ^ d4
+        s3 = p3 ^ d2 ^ d3 ^ d4
+       
+        sindrome_pos = (s3 << 2) | (s2 << 1) | s1
+        
+        bloco_corrigido = bloco.copy()
+        if sindrome_pos != 0:
+            # erro de 1 bit encontrado
+            bloco[sindrome_pos - 1] ^= 1
+            erros_corrigidos.append(sindrome_pos)
+
+            bloco_corrigido = [p1, p2, d1, p3, d2, d3, d4]
+            bits_o.extend(bloco_corrigido)
+
+    report.append(f"Erros corrigidos em {erros_corrigidos}")
+    report.append(f"Bits pós correção: {bits_to_str(bits_o)}")
+
+    return bits_o, report
+    
+def remover_hamming(bits: list[int]):
+    bits_o = []
+    for bloco in slice_list(bits, 7):
+        if len(bloco) != 7:
+            bits_o.extend(bloco)
+            continue
+
+        _, _, d1, _, d2, d3, d4 = bloco[0], bloco[1],\
+                bloco[2], bloco[3], bloco[4], bloco[5], bloco[6]
+
+        bits_o.extend([d1, d2, d3, d4])
+
+    return bits_o
+
+def verifica_paridade(bits):
+    soma = sum(bits)
+    report = ["Verificação de paridade (par):"]
+
+    if soma % 2 == 0:
+        report.append(f"OK {bits_to_str(bits[:-1])} (P:{bits[len(bits)-1]})")
+        return bits[:-1], report
+
+    report.append(f"ERR {bits[:-1]} + P:{bits[len(bits)-1]} resulta em ímpar")
+    report.append("RETRANSMISSÃO NECESSÁRIA")
+    return [], report        
+
+def obter_fn_erro(tipo_deteccao, usar_hamming):
+    fn_detec = verifica_paridade
+    def fn_erro(bits: list[int]):
+        report = ["Tratamento de erros:"]
+        corrigido = []
+        if usar_hamming:
+            corrigido, report_hamming = corrigir_hamming(bits)
+            report.extend(report_hamming)
+        else:
+            corrigido = bits
+
+        detectado, report_detec = fn_detec(corrigido)
+        report.extend(report_detec)
+        if detectado == []:
+            return [], report
+        
+        bits_o = detectado.copy()
+        
+        if usar_hamming: 
+            bits_o = remover_hamming(detectado) # remover bits do hamming 
+        
+        report.append(f"Bits finais: {bits_to_str(bits_o)}")
+
+        return bits_o, report
+
+    return fn_erro
+
+def desenquadrador(enquadramento: str, max_bytes_quadro: int, 
+                   tipo_deteccao: str, usar_hammnig: bool):
+    fn_erro = obter_fn_erro(tipo_deteccao, usar_hammnig) 
+
+    n_bits_edc = 0
+    if "paridade" in tipo_deteccao:
+        n_bits_edc = 1
+    elif "crc" in tipo_deteccao:
+        n_bits_edc = 32
+    elif "checksum" in tipo_deteccao:
+        n_bits_edc = 8
+
+    def desenquadrar_contagem(bits: list[int]):
+        report = ["Contagem de bits: "]
+        bits_uteis = []
+        i = 0
+        while i < len(bits):
+            header = bits[i:i+8]
+            num_bytes = bits_to_int(header)
+            num_bits = n_bits_edc
+
+            if usar_hammnig:
+                num_bits += num_bytes * 14 # hamming(7,4)
+            else:
+                num_bits += num_bytes * 8
+
+            i += 8
+            bits_no_quadro = bits[i:i + num_bits]
+            report.append(f"[{num_bytes}] {bits_to_str(bits_no_quadro)}")
+
+            bits_verificados, report_erro = fn_erro(bits_no_quadro)
+            i += num_bits
+
+            bits_uteis.extend(bits_verificados)
+            report.extend(report_erro)
+
+        return slice_list(bits_uteis, 8), report
+
+    return desenquadrar_contagem
