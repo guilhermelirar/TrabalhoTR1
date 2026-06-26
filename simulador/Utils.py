@@ -1,37 +1,30 @@
 # simulador/Utils.py
+from itertools import chain
 
-def bitstream_to_int(bits: list[int]) -> int:
-    """Função auxiliar para converter uma 
-    lista de bits de volta para inteiro"""
-    bin_str = "".join(map(str, bits))
-    return int(bin_str, 2)
+def concat(lista: list) -> list:
+    return list(chain.from_iterable(lista))
 
-def str_to_bitstream(string: str):
-    res_str = ''.join(format(ord(char), '08b') for char in string)
-    return [int(c) for c in res_str]
+def bits_to_str(bits: list[int]):
+    """ Converte uma lista de bits em string """
+    str_list = [str(bit) for bit in bits]
+    return "".join(str_list)
 
-def int_to_bitstream(number: int, max_bytes: int) -> list[int]:
-    total_bits = max_bytes * 8
-    binary_str = format(number, f'0{total_bits}b')
-    return [int(bit) for bit in binary_str]
+def bits_to_int(bits: list[int]) -> int:
+    """ Converte uma lista de bits em um número inteiro"""
+    return int("".join(map(str, bits)), 2)
 
-def bits_para_hexa(lista_de_bits):
-    # Agrupa a lista de 8 em 8 bits
-    bytes_list = [lista_de_bits[i:i+8] 
-                  for i in range(0,len(lista_de_bits), 8)]
-    
-    hexa_str = []
-    for b in bytes_list:
-        # numero inteiro
-        bin_str = "".join(map(str, b)) # string binária
-        num = int(bin_str, 2)          # inteiro do binário
+def int_to_byte(c: int) -> list[int]:
+    """ Converte um caractere ascii (ord(str)) em uma lista de bits """
+    return [int(i) for i in format(c, '08b')]
 
-        if len(b) == 8:
-            # hexa decimal
-            hexa_str.append(f"{num:02X}h")
-        
-        else:
-            hexa_str.append(f"{num:07b}b")
+def str_to_bytes(string: str) -> list[list[int]]:
+    """ Converte uma string em uma lista de bytes"""
+    return [int_to_byte(ord(c)) for c in string]
 
-    return " ".join(hexa_str)
+def slice_list(l, slice_size: int):
+    """ Fatia uma lista em uma lista de elementos de até slice_size """
+    return [l[i:i+slice_size] for i in range(0, len(l), slice_size)]
 
+def bytes_to_ascii(l_bytes: list[list[int]]):
+    """ Retorna string ascii dado por lista de bytes """
+    return "".join([chr(bits_to_int(byte)) for byte in l_bytes])
