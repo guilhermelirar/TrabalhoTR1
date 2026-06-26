@@ -6,7 +6,7 @@ from Utils import *
 Implementação dos serviços da camada da camada de 
 enlace
 """
-
+""""
 # === 1/3 Protocolos de enquadramento === #
 
 def enquadrar_contagem(bitstream: list[int], 
@@ -255,5 +255,55 @@ def aplicar_hamming(bits):
     report_l.append(report_str)
     report = "\n".join(report_l)
     return bits_o, report
+"""""
 
+from Utils import *
+def obter_fn_erro(tipo_deteccao: str, usar_hamming: bool):
+    def fn_correcao_idle(dado: list[int]):
+        return dado, ["(sem correção de erro)"]
+    
+    def fn_deteccao_idle(dado: list[int]):
+        return dado, ["(sem detecção de erro)"]
 
+    def bit_paridade(dado: list[int]):
+        report = ["Aplicando bit de paridade: "]
+        soma = sum(dado)
+        p = soma % 2
+        
+        report.append(f"{bits_to_str(dado)}+{p}")
+        
+        dado.append(p)
+        
+        return dado, report
+
+    fn_deteccao = bit_paridade
+    fn_correcao = fn_correcao_idle
+
+    def fn_erro(bytes_d: list[list[int]]):
+        report = ["Tratamento de erro: "]
+        bits_in = concat(bytes_d)  
+        
+        bits_correcao, report_correcao = fn_correcao(bits_in)
+        report.extend(report_correcao)
+
+        bits_finais, report_deteccao = fn_deteccao(bits_correcao)
+        report.extend(report_deteccao)
+
+        return bits_finais, report
+
+    return fn_erro
+
+    
+def obter_enquadrador(enquadramento: str, fn_erro):
+    def quadro_contagem(bytes_d: list[list[int]]):
+        num_bytes = len(bytes_d)
+        report = [f"N de bytes: {num_bytes}"]
+        header = int_to_byte(num_bytes)
+        quadro = header
+        conteudo, report_erro = fn_erro(bytes_d)
+        report.extend(report_erro)
+        quadro.extend(conteudo)
+        report.append(f"Quadro final: {bits_to_str(quadro)}")
+        return quadro, report
+
+    return quadro_contagem
