@@ -344,18 +344,45 @@ def obter_enquadrador(enquadramento: str, fn_erro):
         return quadro, report
 
     def quadro_insercao_byte(bytes_d: list[list[int]]):
-        FLAG = str_to_bytes("B")[0]
+        FLAG = [0, 1, 1, 1, 1, 1, 1, 0]
         ESC = str_to_bytes("\\")[0]
         report = ["[Inserção de Bytes]", 
                   f"FLAG[{bits_to_str(FLAG)}] ESC[{bits_to_str(ESC)}]"]
-        quadro = [FLAG]
         
-        report_erro, conteudo = fn_erro(bytes_d)
+        quadro = []
+        quadro.extend(FLAG)
+        
+        conteudo, report_erro = fn_erro(bytes_d)
         report.extend(report_erro)
+       
+        report_quadro_str = "Quadro: [FLAG]"
+        
+        
+        i = 0
+        while i < len(conteudo):
+            bloco = conteudo[i:i+8]
+            if bloco == FLAG or bloco == ESC:
+                quadro.extend(ESC)
+                report_quadro_str += "[ESC]"
+                i += 8
+            
+                quadro.extend(bloco)
+                report_quadro_str += bits_to_str(bloco) 
+            
+            else: 
+                report_quadro_str += bits_to_str([conteudo[i]])
+                quadro.append(conteudo[i])
+                i += 1
+
+        quadro.extend(FLAG)
+        report_quadro_str += "[FLAG]"
+        report.append(report_quadro_str)
+
+        return quadro, report
 
     enquadradores = {
             "contagem de caracteres": quadro_contagem,
-            "insercao de bytes": quadro_insercao_byte
+            "inserção de bytes": quadro_insercao_byte
             }
 
     return enquadradores.get(enquadramento.lower(), quadro_contagem)
