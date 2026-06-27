@@ -258,6 +258,39 @@ def aplicar_hamming(bits):
 """""
 
 from Utils import *
+
+def aplicar_hamming(bits: list[int]):
+    bits_o = []
+    report = ["Aplicando de Hamming (7,4)"]
+
+    # 4 em 4 bytes para inserir 3
+
+    current_byte = []
+    converted_byte = []
+    for nibble in slice_list(bits, 4):
+        current_byte.extend(nibble)
+        d1, d2, d3, d4 = nibble[0], nibble[1], nibble[2], nibble[3]
+       
+        # bits de paridade
+        p1 = d1 ^ d2 ^ d4
+        p2 = d1 ^ d3 ^ d4
+        p3 = d2 ^ d3 ^ d4
+
+        # blcoo final
+        bloco_7bits = [p1, p2, d1, p3, d2, d3, d4]
+        converted_byte.extend(bloco_7bits)
+
+        if len(current_byte) == 8:
+            report.append(
+                    f"[{bits_to_str(current_byte)}]->" 
+                    f"[{bits_to_str(converted_byte)}]"
+                    )
+            bits_o.extend(converted_byte)
+            current_byte = []
+            converted_byte = []
+
+    return bits_o, report
+
 def obter_fn_erro(tipo_deteccao: str, usar_hamming: bool):
     def fn_correcao_idle(dado: list[int]):
         return dado, ["(sem correção de erro)"]
@@ -275,9 +308,13 @@ def obter_fn_erro(tipo_deteccao: str, usar_hamming: bool):
         dado.append(p)
         
         return dado, report
-
-    fn_deteccao = bit_paridade
-    fn_correcao = fn_correcao_idle
+    
+    detectores = {
+            "bit de paridade": bit_paridade,
+            }
+    
+    fn_deteccao = detectores.get(tipo_deteccao.lower(), fn_deteccao_idle)
+    fn_correcao = aplicar_hamming if usar_hamming else fn_correcao_idle
 
     def fn_erro(bytes_d: list[list[int]]):
         report = ["Tratamento de erro: "]
@@ -297,7 +334,7 @@ def obter_fn_erro(tipo_deteccao: str, usar_hamming: bool):
 def obter_enquadrador(enquadramento: str, fn_erro):
     def quadro_contagem(bytes_d: list[list[int]]):
         num_bytes = len(bytes_d)
-        report = [f"N de bytes: {num_bytes}"]
+        report = ["[Quadro por contagem]", f"N de bytes: {num_bytes}"]
         header = int_to_byte(num_bytes)
         quadro = header
         conteudo, report_erro = fn_erro(bytes_d)
@@ -306,4 +343,19 @@ def obter_enquadrador(enquadramento: str, fn_erro):
         report.append(f"Quadro final: {bits_to_str(quadro)}")
         return quadro, report
 
-    return quadro_contagem
+    def quadro_insercao_byte(bytes_d: list[list[int]]):
+        FLAG = str_to_bytes("B")[0]
+        ESC = str_to_bytes("\\")[0]
+        report = ["[Inserção de Bytes]", 
+                  f"FLAG[{bits_to_str(FLAG)}] ESC[{bits_to_str(ESC)}]"]
+        quadro = [FLAG]
+        
+        report_erro, conteudo = fn_erro(bytes_d)
+        report.extend(report_erro)
+
+    enquadradores = {
+            "contagem de caracteres": quadro_contagem,
+            "insercao de bytes": quadro_insercao_byte
+            }
+
+    return enquadradores.get(enquadramento.lower(), quadro_contagem)
