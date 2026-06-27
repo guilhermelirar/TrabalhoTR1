@@ -422,7 +422,7 @@ def desenquadrador(enquadramento: str, max_bytes_quadro: int,
         n_bits_edc = 8
   
     def desenquadrar_contagem(bits: list[int]):
-        report = ["Contagem de caracteres: "]
+        report = ["[Desenquadrando por contagem de caracteres]"]
         bits_uteis = []
         i = 0
         while i < len(bits):
@@ -437,7 +437,7 @@ def desenquadrador(enquadramento: str, max_bytes_quadro: int,
 
             i += 8
             bits_no_quadro = bits[i:i + num_bits]
-            report.append(f"[{num_bytes}] {bits_to_str(bits_no_quadro)}")
+            report.append(f"[{num_bytes}]{bits_to_str(bits_no_quadro)}")
 
             bits_verificados, report_erro = fn_erro(bits_no_quadro)
             i += num_bits
@@ -450,8 +450,60 @@ def desenquadrador(enquadramento: str, max_bytes_quadro: int,
 
         return slice_list(bits_uteis, 8), report
     
+    def desenquadrar_insercao_bytes(bits: list[int]):
+        report = ["[Desenquadrando por inserção de bytes/flag]"]
+        FLAG = [0, 1, 1, 1, 1, 1, 1, 0]
+        ESC = str_to_bytes("\\")[0]
+
+        bits_uteis = []
+        i = 0
+
+        quadro_bruto = []
+        esc_count = 0
+        while i < len(bits):
+            bloco = bits[i:i+8]
+
+            # inicio ou fim de quadro
+            if (bloco == FLAG ):
+                i += len(bloco)
+                # inicio do quadro
+                if quadro_bruto == []:
+                    continue
+                print("quadro bruto", bits_to_str(quadro_bruto)) 
+                # fim do quadro
+                report.append(f"Q: {bits_to_str(quadro_bruto)}," 
+                              f"{esc_count} escapes")
+                esc_count = 0
+
+                tratado, report_erro = fn_erro(quadro_bruto)
+                bits_uteis.extend(tratado) 
+                report.extend(report_erro)
+                
+                quadro_bruto = []
+                if tratado == []:
+                    return tratado, report
+
+                continue
+        
+
+            if bloco == ESC:
+                esc_count += 1
+                i += 8 # pula o esc
+                bloco = bits[i:i+8] # novo i, novo bloco
+                i += len(bloco)
+                quadro_bruto.extend(bloco)
+                continue
+
+            quadro_bruto.append(bits[i])
+            i += 1
+
+        report.append(f"Bits Uteis: {bits_to_str(bits_uteis)}")
+        return slice_list(bits_uteis, 8), report
+
+
     desenquadradores = {
             "contagem de caracteres": desenquadrar_contagem,
+            "inserção de bytes": desenquadrar_insercao_bytes
             }
 
     return desenquadradores.get(enquadramento, desenquadrar_contagem)
