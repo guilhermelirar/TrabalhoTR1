@@ -344,7 +344,8 @@ def corrigir_hamming(bits: list[int]):
             erros_corrigidos.append(sindrome_pos)
 
             bloco_corrigido = [p1, p2, d1, p3, d2, d3, d4]
-            bits_o.extend(bloco_corrigido)
+        
+        bits_o.extend(bloco_corrigido)
 
     report.append(f"Erros corrigidos em {erros_corrigidos}")
     report.append(f"Bits pós correção: {bits_to_str(bits_o)}")
@@ -378,7 +379,11 @@ def verifica_paridade(bits):
     return [], report        
 
 def obter_fn_erro(tipo_deteccao, usar_hamming):
-    fn_detec = verifica_paridade
+    detectadores = {
+            "Bit de Paridade": verifica_paridade
+            }
+    fn_detec = detectadores.get(tipo_deteccao, verifica_paridade) 
+    
     def fn_erro(bits: list[int]):
         report = ["Tratamento de erros:"]
         corrigido = []
@@ -415,9 +420,9 @@ def desenquadrador(enquadramento: str, max_bytes_quadro: int,
         n_bits_edc = 32
     elif "checksum" in tipo_deteccao:
         n_bits_edc = 8
-
+  
     def desenquadrar_contagem(bits: list[int]):
-        report = ["Contagem de bits: "]
+        report = ["Contagem de caracteres: "]
         bits_uteis = []
         i = 0
         while i < len(bits):
@@ -436,10 +441,17 @@ def desenquadrador(enquadramento: str, max_bytes_quadro: int,
 
             bits_verificados, report_erro = fn_erro(bits_no_quadro)
             i += num_bits
-
+            
             bits_uteis.extend(bits_verificados)
             report.extend(report_erro)
+            
+            if bits_verificados == []:
+                return [], report
 
         return slice_list(bits_uteis, 8), report
+    
+    desenquadradores = {
+            "contagem de caracteres": desenquadrar_contagem,
+            }
 
-    return desenquadrar_contagem
+    return desenquadradores.get(enquadramento, desenquadrar_contagem)
