@@ -319,13 +319,27 @@ def verificar_hamming(bits):
 """""
 from Utils import *
 
-def corrigir_hamming(bits: list[int]):
-    report = ["Correção (hamming)"]
+def remover_hamming(bits: list[int]):
     bits_o = []
-    erros_corrigidos = []
     for bloco in slice_list(bits, 7):
         if len(bloco) != 7:
             bits_o.extend(bloco)
+            continue
+
+        _, _, d1, _, d2, d3, d4 = bloco[0], bloco[1],\
+                bloco[2], bloco[3], bloco[4], bloco[5], bloco[6]
+
+        bits_o.extend([d1, d2, d3, d4])
+
+    return bits_o
+
+def corrigir_hamming(bits: list[int]):
+    report = ["Correção (hamming)"]
+    bits_corrigido = []
+    erros_corrigidos = []
+    for bloco in slice_list(bits, 7):
+        if len(bloco) != 7:
+            bits_corrigido.extend(bloco)
             continue
 
         p1, p2, d1, p3, d2, d3, d4 = bloco[0], bloco[1],\
@@ -345,82 +359,53 @@ def corrigir_hamming(bits: list[int]):
 
             bloco_corrigido = [p1, p2, d1, p3, d2, d3, d4]
         
-        bits_o.extend(bloco_corrigido)
+        bits_corrigido.extend(bloco_corrigido)
 
     report.append(f"Erros corrigidos em {erros_corrigidos}")
-    report.append(f"Bits pós correção: {bits_to_str(bits_o)}")
+    report.append(f"Bits pós correção: {bits_to_str(bits_corrigido)}")
 
+    bits_o = remover_hamming(bits_corrigido)
+
+    report.append(f"Bits finais: {bits_to_str(bits_o)}")
     return bits_o, report
     
-def remover_hamming(bits: list[int]):
-    bits_o = []
-    for bloco in slice_list(bits, 7):
-        if len(bloco) != 7:
-            bits_o.extend(bloco)
-            continue
-
-        _, _, d1, _, d2, d3, d4 = bloco[0], bloco[1],\
-                bloco[2], bloco[3], bloco[4], bloco[5], bloco[6]
-
-        bits_o.extend([d1, d2, d3, d4])
-
-    return bits_o
-
 def verifica_paridade(bits):
     soma = sum(bits)
     report = ["Verificação de paridade (par):"]
 
     if soma % 2 == 0:
-        report.append(f"OK {bits_to_str(bits[:-1])} (P:{bits[len(bits)-1]})")
+        report.append(f"OK {bits_to_str(bits[:-1])}|{bits[len(bits)-1]}")
         return bits[:-1], report
 
-    report.append(f"ERR {bits[:-1]} + P:{bits[len(bits)-1]} resulta em ímpar")
+    report.append(f"ERR {bits[:-1]}|{bits[len(bits)-1]} resulta em ímpar")
     report.append("RETRANSMISSÃO NECESSÁRIA")
     return [], report        
 
-def obter_fn_erro(tipo_deteccao, usar_hamming):
+def obter_fn_erro(tipo_tratamento: str):
     detectadores = {
-            "Bit de Paridade": verifica_paridade
+            "bit de paridade": verifica_paridade,
+            "hamming": corrigir_hamming
             }
-    fn_detec = detectadores.get(tipo_deteccao, verifica_paridade) 
-    
-    def fn_erro(bits: list[int]):
-        report = ["Tratamento de erros:"]
-        corrigido = []
-        if usar_hamming:
-            corrigido, report_hamming = corrigir_hamming(bits)
-            report.extend(report_hamming)
-        else:
-            corrigido = bits
-
-        detectado, report_detec = fn_detec(corrigido)
-        report.extend(report_detec)
-        if detectado == []:
-            return [], report
-        
-        bits_o = detectado.copy()
-        
-        if usar_hamming: 
-            bits_o = remover_hamming(detectado) # remover bits do hamming 
-        
-        report.append(f"Bits finais: {bits_to_str(bits_o)}")
-
-        return bits_o, report
-
-    return fn_erro
+    return detectadores.get(tipo_tratamento.lower(), verifica_paridade) 
 
 def desenquadrador(enquadramento: str, max_bytes_quadro: int, 
-                   tipo_deteccao: str, usar_hammnig: bool):
-    fn_erro = obter_fn_erro(tipo_deteccao, usar_hammnig) 
+                   tipo_tratamento_erro: str):
+    tipo_tratamento_erro = tipo_tratamento_erro.lower()
+    fn_erro = obter_fn_erro(tipo_tratamento_erro) 
 
+    FLAG = [0, 1, 1, 1, 1, 1, 1, 0]
+    ESC = str_to_bytes("\\")[0]
+    
     n_bits_edc = 0
-    if "paridade" in tipo_deteccao:
+    if "paridade" in tipo_tratamento_erro:
         n_bits_edc = 1
-    elif "crc" in tipo_deteccao:
+    elif "crc" in tipo_tratamento_erro:
         n_bits_edc = 32
-    elif "checksum" in tipo_deteccao:
+    elif "checksum" in tipo_tratamento_erro:
         n_bits_edc = 8
-  
+ 
+    usar_hamming = "hamming" in tipo_tratamento_erro
+
     def desenquadrar_contagem(bits: list[int]):
         report = ["[Desenquadrando por contagem de caracteres]"]
         bits_uteis = []
@@ -430,7 +415,7 @@ def desenquadrador(enquadramento: str, max_bytes_quadro: int,
             num_bytes = bits_to_int(header)
             num_bits = n_bits_edc
 
-            if usar_hammnig:
+            if usar_hamming:
                 num_bits += num_bytes * 14 # hamming(7,4)
             else:
                 num_bits += num_bytes * 8
@@ -452,8 +437,7 @@ def desenquadrador(enquadramento: str, max_bytes_quadro: int,
     
     def desenquadrar_insercao_bytes(bits: list[int]):
         report = ["[Desenquadrando por inserção de bytes/flag]"]
-        FLAG = [0, 1, 1, 1, 1, 1, 1, 0]
-        ESC = str_to_bytes("\\")[0]
+
 
         bits_uteis = []
         i = 0
@@ -500,10 +484,61 @@ def desenquadrador(enquadramento: str, max_bytes_quadro: int,
         report.append(f"Bits Uteis: {bits_to_str(bits_uteis)}")
         return slice_list(bits_uteis, 8), report
 
+    def desenquadrar_insercao_bits(bits: list[int]):
+        report = ["[Desenquadrando por inserção de bits/flag]"]
+        bits_uteis = []
+        i = 0
+        quadro_bruto = []
+        esc_count = 0
+        count_1 = 0
+        while i < len(bits):
+            bloco = bits[i:i+8]
+
+            # inicio ou fim de quadro
+            if (bloco == FLAG ):
+                i += len(bloco)
+                # inicio do quadro
+                if quadro_bruto == []:
+                    continue
+
+                # fim do quadro
+                report.append(f"Q: {bits_to_str(quadro_bruto)}," 
+                              f"{esc_count} escapes")
+                esc_count = 0
+
+                tratado, report_erro = fn_erro(quadro_bruto)
+                bits_uteis.extend(tratado) 
+                report.extend(report_erro)
+                
+                quadro_bruto = []
+                if tratado == []:
+                    return tratado, report
+
+                continue
+            
+            bit = bits[i]
+
+            # remove 0 após 5 1s seguidos
+            if bit == 1:
+                count_1 += 1 
+            elif count_1 == 5:
+                count_1 = 0
+                esc_count += 1 
+                bit = bits[i+1]
+            else:
+                count_1 = 0
+
+            quadro_bruto.append(bits[i])
+            i += 1
+
+        report.append(f"Bits Uteis: {bits_to_str(bits_uteis)}")
+        return slice_list(bits_uteis, 8), report
+    
 
     desenquadradores = {
             "contagem de caracteres": desenquadrar_contagem,
-            "inserção de bytes": desenquadrar_insercao_bytes
+            "inserção de bytes": desenquadrar_insercao_bytes,
+            "inserção de bits": desenquadrar_insercao_bits
             }
 
     return desenquadradores.get(enquadramento, desenquadrar_contagem)

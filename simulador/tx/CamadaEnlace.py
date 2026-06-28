@@ -259,46 +259,45 @@ def aplicar_hamming(bits):
 
 from Utils import *
 
-def aplicar_hamming(bits: list[int]):
-    bits_o = []
-    report = ["Aplicando de Hamming (7,4)"]
-
-    # 4 em 4 bytes para inserir 3
-
-    current_byte = []
-    converted_byte = []
-    for nibble in slice_list(bits, 4):
-        current_byte.extend(nibble)
-        d1, d2, d3, d4 = nibble[0], nibble[1], nibble[2], nibble[3]
-       
-        # bits de paridade
-        p1 = d1 ^ d2 ^ d4
-        p2 = d1 ^ d3 ^ d4
-        p3 = d2 ^ d3 ^ d4
-
-        # blcoo final
-        bloco_7bits = [p1, p2, d1, p3, d2, d3, d4]
-        converted_byte.extend(bloco_7bits)
-
-        if len(current_byte) == 8:
-            report.append(
-                    f"[{bits_to_str(current_byte)}]->" 
-                    f"[{bits_to_str(converted_byte)}]"
-                    )
-            bits_o.extend(converted_byte)
-            current_byte = []
-            converted_byte = []
-
-    return bits_o, report
-
-def obter_fn_erro(tipo_deteccao: str, usar_hamming: bool):
-    def fn_correcao_idle(dado: list[int]):
-        return dado, ["(sem correção de erro)"]
-    
+def obter_fn_erro(tipo_tratamento: str):
     def fn_deteccao_idle(dado: list[int]):
-        return dado, ["(sem detecção de erro)"]
+        "Função padrão sem tratamento de erro"
+        return dado, ["(sem tratamento de erro)"]
+
+    def aplicar_hamming(bits: list[int]):
+        "Função que aplica hamming aos bits"
+        bits_o = []
+        report = ["Aplicando de Hamming (7,4)"]
+
+        # 4 em 4 bytes para inserir 3
+        current_byte = []
+        converted_byte = []
+        for nibble in slice_list(bits, 4):
+            current_byte.extend(nibble)
+            d1, d2, d3, d4 = nibble[0], nibble[1], nibble[2], nibble[3]
+           
+            # bits de paridade
+            p1 = d1 ^ d2 ^ d4
+            p2 = d1 ^ d3 ^ d4
+            p3 = d2 ^ d3 ^ d4
+
+            # blcoo final
+            bloco_7bits = [p1, p2, d1, p3, d2, d3, d4]
+            converted_byte.extend(bloco_7bits)
+
+            if len(current_byte) == 8:
+                report.append(
+                        f"[{bits_to_str(current_byte)}]->" 
+                        f"[{bits_to_str(converted_byte)}]"
+                        )
+                bits_o.extend(converted_byte)
+                current_byte = []
+                converted_byte = []
+
+        return bits_o, report
 
     def bit_paridade(dado: list[int]):
+        """Insere um bit de paridade ao final dos bits"""
         report = ["Aplicando bit de paridade: "]
         soma = sum(dado)
         p = soma % 2
@@ -309,54 +308,42 @@ def obter_fn_erro(tipo_deteccao: str, usar_hamming: bool):
         
         return dado, report
     
-    detectores = {
+
+    funcoes_erro = {
             "bit de paridade": bit_paridade,
+            "hamming": aplicar_hamming
             }
     
-    fn_deteccao = detectores.get(tipo_deteccao.lower(), fn_deteccao_idle)
-    fn_correcao = aplicar_hamming if usar_hamming else fn_correcao_idle
-
-    def fn_erro(bytes_d: list[list[int]]):
-        report = ["Tratamento de erro: "]
-        bits_in = concat(bytes_d)  
-        
-        bits_correcao, report_correcao = fn_correcao(bits_in)
-        report.extend(report_correcao)
-
-        bits_finais, report_deteccao = fn_deteccao(bits_correcao)
-        report.extend(report_deteccao)
-
-        return bits_finais, report
-
-    return fn_erro
-
+    return funcoes_erro.get(tipo_tratamento.lower(), fn_deteccao_idle)
     
 def obter_enquadrador(enquadramento: str, fn_erro):
+    FLAG = [0, 1, 1, 1, 1, 1, 1, 0]
+    ESC = str_to_bytes("\\")[0]
+
     def quadro_contagem(bytes_d: list[list[int]]):
         num_bytes = len(bytes_d)
         report = ["[Quadro por contagem]", f"N de bytes: {num_bytes}"]
         header = int_to_byte(num_bytes)
         quadro = header
-        conteudo, report_erro = fn_erro(bytes_d)
+        conteudo, report_erro = fn_erro(concat(bytes_d))
         report.extend(report_erro)
         quadro.extend(conteudo)
         report.append(f"Quadro final: {bits_to_str(quadro)}")
         return quadro, report
 
     def quadro_insercao_byte(bytes_d: list[list[int]]):
-        FLAG = [0, 1, 1, 1, 1, 1, 1, 0]
-        ESC = str_to_bytes("\\")[0]
+        """Retorna uma lista de bits que representa um quadro por 
+        insserção de bytes e escape (quando necessário)"""
         report = ["[Inserção de Bytes]", 
                   f"FLAG[{bits_to_str(FLAG)}] ESC[{bits_to_str(ESC)}]"]
         
         quadro = []
         quadro.extend(FLAG)
         
-        conteudo, report_erro = fn_erro(bytes_d)
+        conteudo, report_erro = fn_erro(concat(bytes_d))
         report.extend(report_erro)
        
         report_quadro_str = "Quadro: [FLAG]"
-        
         
         i = 0
         while i < len(conteudo):
@@ -380,9 +367,37 @@ def obter_enquadrador(enquadramento: str, fn_erro):
 
         return quadro, report
 
+    def quadro_insercao_bit(bytes_d: list[list[int]]):
+        bits_d = concat(bytes_d)
+        report = [f"[Inserção de Bits com Flag: {bits_to_str(FLAG)}"]
+
+        quadro = []
+        bits_tratado, report_err = fn_erro(bits_d)
+        report.extend(report_err)
+        
+        quadro.append(FLAG)
+        count_1 = 0
+        escapes = 0
+        for bit in bits_tratado:
+            # insere um 0 a cada 5 1s
+            if count_1 == 5:
+                count_1 = 0 
+                escapes += 1
+                quadro.append(0)
+
+            if bit == 1:
+                count_1 += 1
+        
+            quadro.append(bit)
+
+        quadro.append(FLAG)
+        report.append(f"Número de 0 inseridos p/ escape: {escapes}")
+        report.append(f"Quadro: {bits_to_str(quadro)}")
+
     enquadradores = {
             "contagem de caracteres": quadro_contagem,
-            "inserção de bytes": quadro_insercao_byte
+            "inserção de bytes": quadro_insercao_byte,
+            "inserção de bits": quadro_insercao_bit
             }
 
     return enquadradores.get(enquadramento.lower(), quadro_contagem)
