@@ -516,15 +516,17 @@ def desenquadrador(enquadramento: str, max_bytes_quadro: int,
 
                 continue
             
-            bit = bits[i]
 
-            # remove 0 após 5 1s seguidos
-            if bit == 1:
-                count_1 += 1 
-            elif count_1 == 5:
+           # remove 0 após 5 1s seguidos
+            if count_1 == 5:
+                # O bit atual é o 0 de escape
                 count_1 = 0
                 esc_count += 1 
-                bit = bits[i+1]
+                i += 1  # pula o zero de escape
+                continue # volta pro inicio do loop 
+
+            if bits[i] == 1:
+                count_1 += 1 
             else:
                 count_1 = 0
 
