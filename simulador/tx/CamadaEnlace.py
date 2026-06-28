@@ -375,24 +375,28 @@ def obter_enquadrador(enquadramento: str, fn_erro):
         bits_tratado, report_err = fn_erro(bits_d)
         report.extend(report_err)
         
-        quadro.append(FLAG)
+        quadro.extend(FLAG)
         count_1 = 0
         escapes = 0
         for bit in bits_tratado:
-            # insere um 0 a cada 5 1s
-            if count_1 == 5:
-                count_1 = 0 
-                escapes += 1
-                quadro.append(0)
+            quadro.append(bit)
 
             if bit == 1:
                 count_1 += 1
-        
-            quadro.append(bit)
+            else:
+                count_1 = 0
 
-        quadro.append(FLAG)
+            # se completou 5 uns, insere o 0 de escape imediatamente
+            if count_1 == 5:
+                quadro.append(0)
+                count_1 = 0 
+                escapes += 1
+
+        quadro.extend(FLAG)
         report.append(f"Número de 0 inseridos p/ escape: {escapes}")
         report.append(f"Quadro: {bits_to_str(quadro)}")
+
+        return quadro, report
 
     enquadradores = {
             "contagem de caracteres": quadro_contagem,
