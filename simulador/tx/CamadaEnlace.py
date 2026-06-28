@@ -9,172 +9,6 @@ enlace
 """"
 # === 1/3 Protocolos de enquadramento === #
 
-def enquadrar_contagem(bitstream: list[int], 
-                                  num_bytes: int = 4):
-    
-    bitstream_out = []
-    n_bits_quadro = num_bytes * 8
-    bitstream_len = len(bitstream)
-
-    report_l = ["Quadros de até 4 bytes"]
-    for i in range(0, bitstream_len, n_bits_quadro):
-        final = min(bitstream_len, n_bits_quadro + i)  
-        quadro_util = bitstream[i:final]
-        
-        bitstream_out.extend(int_to_bitstream(len(quadro_util), 1))
-        bitstream_out.extend(quadro_util)
-        
-        report_l.append(f"[{len(quadro_util)//8}]" 
-                      f" {bits_para_hexa(quadro_util)}")
-        
-    report = "\n".join(report_l)
-    return bitstream_out, report
-
-def enquadrar_bytes_flag(bitstream: list[int], num_bytes: int = 4):
-    FLAG = str_to_bitstream("B")
-    ESC = str_to_bitstream("\\")
-
-    report_l = [f"FLAG: {bits_para_hexa(FLAG)}, ESC: {bits_para_hexa(ESC)}"]
-    bitstream_out = []
-    n_bits_quadro = num_bytes * 8
-    bitstream_len = len(bitstream)
-   
-    def inserir_escape(quadro_util: list[int]):
-        # verifica ocorrência de FLAG ou ESC
-        quadro_str = ["[FLAG]"]
-        for i in range(0, len(quadro_util), 8):
-            byte = quadro_util[i:i+8] 
-
-            # Inserindo ESC quando necessário
-            if byte == FLAG or byte == ESC:
-                bitstream_out.extend(ESC)
-                quadro_str.append("[ESC]")
-            
-            bitstream_out.extend(byte) # Inserindo conteúdo original
-
-        quadro_str.append(bits_para_hexa(quadro_util))
-        quadro_str.append("[FLAG]")
-        quadro_str = " ".join(quadro_str)
-        report_l.append(quadro_str)
-
-    for i in range(0, bitstream_len, n_bits_quadro):
-        final = min(bitstream_len, n_bits_quadro + i)
-        quadro_util = bitstream[i:final]
-
-        bitstream_out.extend(FLAG)  # coloca FLAG no inicio
-        inserir_escape(quadro_util)
-        bitstream_out.extend(FLAG)
-
-    report = "\n".join(report_l)
-    return bitstream_out, report
-
-def enquadrar_bits_flag(bits: list[int], num_bytes: int = 4):
-    FLAG = [0, 1, 1, 1, 1, 1, 1, 0]
-    
-    bitstream_out = []
-    n_bits_quadro = num_bytes * 8
-    bitstream_len = len(bits)
-    report_l = [f"FLAG: {bits_para_hexa(FLAG)}"]
-
-    for i in range(0, bitstream_len, n_bits_quadro):
-        final = min(bitstream_len, n_bits_quadro + i)
-        quadro_util = bits[i:final]
-
-        bitstream_out.extend(FLAG)
-        
-        # acrescentar 0 após sequência de 5 1s
-        quadro_com_stuffing = []
-        contador_1 = 0
-        
-        for bit in quadro_util:
-            quadro_com_stuffing.append(bit)
-           
-            if bit == 1:
-                contador_1 += 1
-                if contador_1 == 5:
-                    quadro_com_stuffing.append(0)
-                    contador_1 = 0 
-            else:
-                contador_1 = 0 
-
-        bitstream_out.extend(quadro_com_stuffing)
-
-        bitstream_out.extend(FLAG)
-       
-        print("REPORT L", report_l)
-        report_l.append(f"[FLAG] {bits_para_hexa(quadro_com_stuffing)} [FLAG]")
-
-    report = "\n".join(report_l)
-    return bitstream_out, report
-
-def aplicar_paridade(bits):
-    STEP = 8 
-    bits_o = []
-
-    report_l = ["Aplicação de paridade: "]
-    report_str_count = 0
-    report_str = ""
-    for i in range(0, len(bits), STEP):
-        janela = bits[i:(min(len(bits), i + STEP))]
-        n_1s = sum(bit for bit in janela if bit == 1)
-        
-        p = n_1s % 2 # bit de paridade
-
-        if report_str_count == 4:
-            report_l.append(report_str)
-            report_str = f"{bits_para_hexa(janela)} ({p}) "
-            report_str_count = 1
-        else:
-            report_str_count += 1
-            report_str += f"{bits_para_hexa(janela)} ({p}) "
-
-        janela.append(p) # se resto 0, adiciona 0 (par), cc, 1
-        bits_o.extend(janela)
-
-    report_l.append(report_str)
-    report = "\n".join(report_l) 
-
-    return bits_o, report
-
-
-def aplicar_checksum(bits):
-    STEP = 8 # soma 8 em 8
-    bits_o = bits.copy() # para manter original 
-
-    report_l = ["Aplicação de Checksum: "]
-    report_str_count = 0
-    report_str = ""
-    
-    soma_total = 0
-    
-    # calcular soma dos valores de byte dado por cada bloco
-    for i in range(0, len(bits), STEP):
-        janela = bits[i:(min(len(bits), i + STEP))]
-        
-        valor_byte = int("".join(map(str, janela)), 2)
-        soma_total += valor_byte
-
-        if report_str_count == 4:
-            report_l.append(report_str)
-            report_str = f"{bits_para_hexa(janela)} "
-            report_str_count = 1
-        else:
-            report_str_count += 1
-            report_str += f"{bits_para_hexa(janela)} "
-
-    # lista de bits 8 menos significativos do complemento da soma
-    checksum_val = (~(soma_total % 256)) & 0xFF
-    checksum_bits = [int(b) for b in f"{checksum_val:08b}"]
-    
-    # relatório
-    report_str += f"[CS: {bits_para_hexa(checksum_bits)}]"
-    report_l.append(report_str)
-    report = "\n".join(report_l) 
-
-    bits_o.extend(checksum_bits)
-
-    return bits_o, report
-
 def aplicar_crc32(bits):
     bits_o = bits.copy()
     report_l = ["Aplicação de CRC-32: "]
@@ -220,52 +54,37 @@ def aplicar_crc32(bits):
     
     return bits_o, report
 
-def aplicar_hamming(bits):
-    bits_o = []
-    report_l = ["Aplicação de Hamming (7,4)"]
-    report_str = ""
-    report_str_count = 0
-
-    # 4 em 4 bytes para inserir 3
-    for i in range(0, len(bits), 4):
-        janela = bits[i:i+4]
-        while len(janela) < 4:
-            janela.append(0)
-            
-        d1, d2, d3, d4 = janela[0], janela[1], janela[2], janela[3]
-        
-        p1 = d1 ^ d2 ^ d4
-        p2 = d1 ^ d3 ^ d4
-        p3 = d2 ^ d3 ^ d4
-       
-        # bloco final
-        bloco_7bits = [p1, p2, d1, p3, d2, d3, d4]
-        bits_o.extend(bloco_7bits)
-        
-        if report_str_count == 4:
-            report_l.append(report_str)
-            report_str = f"{bits_para_hexa(janela)}"\
-                    f"->{p1}{p2}{d1}{p3}{d2}{d3}{d4}"
-            report_str_count = 1
-        else:
-            report_str_count += 1
-            report_str += f"{bits_para_hexa(janela)} ->"\
-                    f"Bloco({p1}{p2}{d1}{p3}{d2}{d3}{d4}) "
-            
-    report_l.append(report_str)
-    report = "\n".join(report_l)
-    return bits_o, report
 """""
 
 from Utils import *
 
 def obter_fn_erro(tipo_tratamento: str):
     def fn_deteccao_idle(dado: list[int]):
-        "Função padrão sem tratamento de erro"
+        """Função padrão sem tratamento de erro"""
         return dado, ["(sem tratamento de erro)"]
+    
+    def aplicar_checksum(bits: list[int]):
+        """Calcula checksum"""
+        report = ["Aplicando checksum"]
+        soma = sum([bits_to_int(byte) for byte in slice_list(bits, 8)])
+
+
+        while soma > 255:
+            vai_um = soma >> 8   
+            soma = (soma & 0xFF) + vai_um 
+
+        checksum_byte = int_to_byte(~soma & 0xFF)
+        report.append(f"Checksum({bits_to_str(bits)})="
+            f"{bits_to_int(checksum_byte)}")
+        
+        res = bits.copy()
+        res.extend(checksum_byte)
+        report.append(f"Res: {bits_to_str(res)}") 
+
+        return res, report
 
     def aplicar_hamming(bits: list[int]):
-        "Função que aplica hamming aos bits"
+        """Função que aplica hamming aos bits"""
         bits_o = []
         report = ["Aplicando de Hamming (7,4)"]
 
@@ -311,7 +130,8 @@ def obter_fn_erro(tipo_tratamento: str):
 
     funcoes_erro = {
             "bit de paridade": bit_paridade,
-            "hamming": aplicar_hamming
+            "hamming": aplicar_hamming, 
+            "checksum": aplicar_checksum
             }
     
     return funcoes_erro.get(tipo_tratamento.lower(), fn_deteccao_idle)
