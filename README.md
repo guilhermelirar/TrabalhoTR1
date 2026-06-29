@@ -36,4 +36,5 @@ pip install -r requirements.txt
 # instanciar a janela
 python simulador/Simulador.py
 ```
-
+--- 
+[Captura de tela](Captura.png)
