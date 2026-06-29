@@ -115,7 +115,8 @@ def verifica_paridade(bits):
         report.append(f"OK {bits_to_str(bits[:-1])}|{bits[len(bits)-1]}")
         return bits[:-1], report
 
-    report.append(f"ERR {bits[:-1]}|{bits[len(bits)-1]} resulta em ímpar")
+    report.append(f"ERR {bits_to_str(bits[:-1])}"
+                  f"|{bits[len(bits)-1]} resulta em ímpar")
     report.append("RETRANSMISSÃO NECESSÁRIA")
     return [], report        
 

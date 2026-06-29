@@ -1,6 +1,7 @@
 import threading
 from tx import CamadaFisica as tx_cf
 from tx import CamadaEnlace as tx_ce
+from Utils import *
 
 class Tx:
     def __init__(self, canal, shutdown_event: threading.Event) -> None:
@@ -27,51 +28,27 @@ class Tx:
 
         return modulador_fn(bitstream)
 
-    def enlace(self, msg, enquadramento, detec_erro, corr_erro, historico):
+    def enlace(self, msg, enquadramento, tratamento_erro, 
+               tam_quadro, historico):
         # Transforma o texto em bitstream inicial
-        bits = tx_ce.str_to_bitstream(msg)
-        
+        bytes_msg = str_to_bytes(msg) 
         enq_limpo = str(enquadramento).lower()
-        detec_limpo = str(detec_erro).lower() if detec_erro else "nenhum"
-        corr_limpo = str(corr_erro).lower() if corr_erro else "nenhum"
+        tratamento_limpo = str(tratamento_erro).lower() if tratamento_erro\
+                else "nenhum"
         
-        # --- 1. PASSO: ENQUADRAMENTO ---
-        report_enq = "ERRO: Nenhum enquadramento foi selecionado corretamente."
-        if "contagem" in enq_limpo:
-            bits, report_enq = tx_ce.enquadrar_contagem(bits)
-        elif "bytes" in enq_limpo:
-            bits, report_enq = tx_ce.enquadrar_bytes_flag(bits)
-        elif "bits" in enq_limpo:
-            bits, report_enq = tx_ce.enquadrar_bits_flag(bits)
-            
-        historico["report_enquadramento_tx"] = report_enq
+        # enquadramento
+        fn_erro_tx = tx_ce.obter_fn_erro(tratamento_limpo)
+        fn_gera_quadros = tx_ce.obter_enquadrador(enq_limpo, fn_erro_tx)
 
-        # --- 2. PASSO: TRATAMENTO DE ERROS (DETECÇÃO + CORREÇÃO) ---
-        reports_erro_lista = []
-        
-        if "hamming" in corr_limpo:
-            if "paridade" in detec_limpo:
-                detec_limpo = "crc"  
-        if "hamming" in corr_limpo:
-            bits, rep_corr = tx_ce.aplicar_hamming(bits)
-            reports_erro_lista.append(rep_corr)
+        report = []
+        bits_tx = []
+        for bloco in slice_list(bytes_msg, tam_quadro):
+            bits_quadro, report_quadro = fn_gera_quadros(bloco)
+            bits_tx.extend(bits_quadro)
+            report.extend(report_quadro)
             
-        if "paridade" in detec_limpo and "hamming" not in corr_limpo:
-            bits, rep_detec = tx_ce.aplicar_paridade(bits)
-            reports_erro_lista.append(rep_detec)
-        elif "checksum" in detec_limpo:
-            bits, rep_detec = tx_ce.aplicar_checksum(bits)
-            reports_erro_lista.append(rep_detec)
-        elif "crc" in detec_limpo or "32" in detec_limpo:
-            bits, rep_detec = tx_ce.aplicar_crc32(bits)
-            reports_erro_lista.append(rep_detec)
-            
-        if not reports_erro_lista:
-            reports_erro_lista.append(
-                    "Nenhum mecanismo de controle de erro aplicado.")
-            
-        historico["report_erro_tx"] = "\n".join(reports_erro_lista)
-        return bits
+        historico["report_tx"] = report 
+        return bits_tx
 
     def camada_fisica(self, bitstream, modulacao, historico):
         amostras_p_bit = 100 
@@ -94,11 +71,12 @@ class Tx:
         msg = config.get("mensagem", "Ola Mundo")
         modulacao = config.get("modulacao", "NRZ Polar")
         enquadramento = config.get("enquadramento", "Contagem de Caracteres")
-        detec_erro = config.get("detec_erro") 
-        corr_erro = config.get("corr_erro", "Nenhum")  
-        bitstream = self.enlace(msg, enquadramento, 
-                                detec_erro, corr_erro, historico)
-        sinal = self.camada_fisica(bitstream, modulacao, historico)
+        tratamento_erro = config.get("tratamento_erro") 
+        tam_quadro = config.get("tam_quadro", 4)  
+        bits = self.enlace(msg, enquadramento, tratamento_erro, 
+                                tam_quadro, historico)
+
+        sinal = self.camada_fisica(bits, modulacao, historico)
         
         if not self.shutdown_event.is_set():
             try:
@@ -107,3 +85,4 @@ class Tx:
                 print(f"Erro no canal.put: {e}")
             
             self.canal.buffer.put(None)
+    
