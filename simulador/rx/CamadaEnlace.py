@@ -5,6 +5,7 @@ from Utils import *
 
 def remover_hamming(bits: list[int]):
     bits_o = []
+    # a cada 7 bits, há 3 bits de hamming
     for bloco in slice_list(bits, 7):
         if len(bloco) != 7:
             bits_o.extend(bloco)
@@ -26,13 +27,15 @@ def corrigir_hamming(bits: list[int]):
             bits_corrigido.extend(bloco)
             continue
 
+        # 4 bits de dados e 3 de correção
         p1, p2, d1, p3, d2, d3, d4 = bloco[0], bloco[1],\
                 bloco[2], bloco[3], bloco[4], bloco[5], bloco[6]
         
         s1 = p1 ^ d1 ^ d2 ^ d4
         s2 = p2 ^ d1 ^ d3 ^ d4
         s3 = p3 ^ d2 ^ d3 ^ d4
-       
+      
+        # posição do erro
         sindrome_pos = (s3 << 2) | (s2 << 1) | s1
         
         bloco_corrigido = bloco.copy()
@@ -57,6 +60,7 @@ def verifica_paridade(bits):
     soma = sum(bits)
     report = ["Verificação de paridade (par):"]
 
+    # paridade par
     if soma % 2 == 0:
         report.append(f"OK {bits_to_str(bits[:-1])}|{bits[len(bits)-1]}")
         return bits[:-1], report
@@ -70,7 +74,8 @@ def verifica_checksum(bits: list[int]):
     """Calcula checksum"""
     report = ["[Verificando checksum RX]"]
     soma = sum([bits_to_int(byte) for byte in slice_list(bits, 8)])
-    
+   
+    # tratamento de vai um
     while soma > 255:
         vai_um = soma >> 8   
         soma = (soma & 0xFF) + vai_um 
@@ -78,12 +83,14 @@ def verifica_checksum(bits: list[int]):
     checksum_final = ~soma & 0xFF
 
     if checksum_final != 0:
+        # esperado 0x00
         report.append(f"ERR: obteve 0x{checksum_final:02x}, esperado 0x00")
         report.append("RETRANSMISSÃO NECESSÁRIA")
         return [], report
 
     report.append(f"Checksum OK")
-    
+   
+    # remoção do ultimo byte
     res = bits[:-8]
     report.append(f"Res: {bits_to_str(res)}") 
 
@@ -150,6 +157,9 @@ def desenquadrador(enquadramento: str, max_bytes_quadro: int,
     FLAG = [0, 1, 1, 1, 1, 1, 1, 0]
     ESC = str_to_bytes("\\")[0]
     
+    # calcula tamanho do edc, para que o desenquadramento 
+    # por contagem de bytes saiba quantos bits a mais devem
+    # ser considerados
     n_bits_edc = 0
     if "paridade" in tipo_tratamento_erro:
         n_bits_edc = 1
@@ -298,3 +308,4 @@ def desenquadrador(enquadramento: str, max_bytes_quadro: int,
             }
 
     return desenquadradores.get(enquadramento, desenquadrar_contagem)
+

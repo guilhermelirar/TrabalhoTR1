@@ -10,6 +10,7 @@ enlace
 from Utils import *
 
 def obter_fn_erro(tipo_tratamento: str):
+    # quando não há tratamento de erro apenas retorna
     def fn_deteccao_idle(dado: list[int]):
         """Função padrão sem tratamento de erro"""
         return dado, ["(sem tratamento de erro)"]
@@ -18,12 +19,13 @@ def obter_fn_erro(tipo_tratamento: str):
         """Calcula checksum"""
         report = ["Aplicando checksum"]
         soma = sum([bits_to_int(byte) for byte in slice_list(bits, 8)])
-
-
+        
+        # tratamento de vai um
         while soma > 255:
             vai_um = soma >> 8   
             soma = (soma & 0xFF) + vai_um 
 
+        # invertendo para que o cálculo em rx deva dar 0x00
         checksum_byte = int_to_byte(~soma & 0xFF)
         report.append(f"Checksum({bits_to_str(bits)})="
             f"{bits_to_int(checksum_byte)}")
@@ -70,7 +72,7 @@ def obter_fn_erro(tipo_tratamento: str):
         """Insere um bit de paridade ao final dos bits"""
         report = ["Aplicando bit de paridade: "]
         soma = sum(dado)
-        p = soma % 2
+        p = soma % 2 # resto dá o bit de paridade
         
         report.append(f"{bits_to_str(dado)}+{p}")
         
@@ -135,6 +137,8 @@ def obter_enquadrador(enquadramento: str, fn_erro):
     def quadro_contagem(bytes_d: list[list[int]]):
         num_bytes = len(bytes_d)
         report = ["[Quadro por contagem]", f"N de bytes: {num_bytes}"]
+
+        # contagem de quantos bytes da msg original estão neste quadro
         header = int_to_byte(num_bytes)
         quadro = header
         conteudo, report_erro = fn_erro(concat(bytes_d))
@@ -157,6 +161,7 @@ def obter_enquadrador(enquadramento: str, fn_erro):
        
         report_quadro_str = "Quadro: [FLAG]"
         
+        # procurando por sequências que exijam escape
         i = 0
         while i < len(conteudo):
             bloco = conteudo[i:i+8]
@@ -217,3 +222,4 @@ def obter_enquadrador(enquadramento: str, fn_erro):
             }
 
     return enquadradores.get(enquadramento.lower(), quadro_contagem)
+
