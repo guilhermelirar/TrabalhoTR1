@@ -3,13 +3,11 @@ import gi
 import matplotlib.pyplot as plt
 from matplotlib.backends.backend_gtk3agg \
         import FigureCanvasGTK3Agg as FigureCanvas
-from numpy import zeros_like
 
 gi.require_version("Gtk", "3.0")
 from gi.repository import GLib, Gtk
 
 class JanelaSimulador(Gtk.Window):
-
     def __init__(self):
         super().__init__(title="Simulador de Camada Física e Enlace")
         self.set_default_size(400, 300)
@@ -39,8 +37,8 @@ class JanelaSimulador(Gtk.Window):
                 "Inserção de Bytes",
                 "Inserção de Bits"
             ],
-            "Detecção de Erros": ["Bit de Paridade", "Checksum", "CRC-32"],
-            "Correção de Erros": ["Nenhuma", "Hamming"],
+            "Tratamento de Erros": ["Bit de Paridade", 
+                                    "Checksum", "CRC-32", "Hamming", "Nenhum"],
             "Modulação": [
                 "NRZ Polar",
                 "Manchester",
@@ -70,7 +68,7 @@ class JanelaSimulador(Gtk.Window):
 
     def _setup_spinbutton(self, box):
         campos_numericos = {
-            "Tamanho Máximo do Quadro": (1024, 64, 4096, 64),
+            "Tamanho Máximo do Quadro": (4, 1, 128, 1),
             "Desvio Padrão do Ruído (σ)": (0.5, 0.0, 10.0, 0.1),
             "Média do Ruído": (0.0, 0.0, 5.0, 0.1),
         }
@@ -121,7 +119,7 @@ class JanelaSimulador(Gtk.Window):
 
         # ---- área de configuração ---- #
         left_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=6)
-
+        left_box.set_size_request(480, -1)
         self._setup_caixa_mensagem(left_box)
         self._setup_combobox(left_box)
         self._setup_spinbutton(left_box)
@@ -187,7 +185,7 @@ class JanelaSimulador(Gtk.Window):
         self.ax_canal.legend()
 
         self.canvas = FigureCanvas(self.fig)
-        self.canvas.set_size_request(400, 300)
+        self.canvas.set_size_request(600, 300)
 
         # --- colocando na main_box ---- #
         main_box.pack_start(left_box, False, False, 0) # não expande
@@ -207,10 +205,7 @@ class JanelaSimulador(Gtk.Window):
             "modulacao": self.combos["Modulação"]\
                     .get_active_text(),
             
-            "detec_erro": self.combos["Detecção de Erros"]\
-                    .get_active_text(),
-
-            "corr_erro": self.combos["Correção de Erros"]\
+            "tratamento_erro": self.combos["Tratamento de Erros"]\
                     .get_active_text(),
 
             "tam_quadro": int(self.seletores["Tamanho Máximo do Quadro"]\
@@ -267,35 +262,21 @@ class JanelaSimulador(Gtk.Window):
         self.canvas.draw()
 
     def finalizar_simulacao(self, historico: dict):
-        # 1. Gráficos
+        # Gráficos
         self.dados_grafico = (historico.get("sinal_nrz_puro", []), 
                               historico.get("sinal_canal", []))
         self.desenhar_grafico(offset=0)
         
-        # 2. Montagem do painel centralizando as strings prontas
+        # Exibir informações dos relatórios
         msg_final = historico.get("mensagem_final", "[Sem dados]")
         
-        linhas = [
-            "=========================================",
-            f"  MENSAGEM RECEBIDA: \"{msg_final}\"",
-            "=========================================\n",
-            "--- SEÇÃO DE TRANSMISSÃO (TX) ---",
-            historico.get("report_enquadramento_tx", 
-                          "Sem dados de enquadramento."),
-            historico.get("report_erro_tx", 
-                          "Sem dados de controle de erro."),
-            "\n" + "-"*40 + "\n",
-            "--- SEÇÃO DE RECEPÇÃO (RX) ---",
-            historico.get("report_erro_rx", 
-                          "Sem dados de controle de erro rx."),
-            historico.get("report_enquadramento_rx", 
-                          "Sem dados de desenquadramento.")
-        ]
+        linhas = ["=== TX ==="]
+        linhas.extend(historico.get("report_tx", []))
+        linhas.append("\n=== RX ===")
+        linhas.extend(historico.get("report_rx", []))
+        linhas.append(f"=== MSG RECEBIDA: {msg_final}")
         
-        # Junta todas as partes com uma quebra de linha
         texto_relatorio = "\n".join(linhas)
-
-        # 3. Exibe na tela
         buffer = self.report_txview.get_buffer()
         buffer.set_text(texto_relatorio)
         
