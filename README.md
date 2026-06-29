@@ -37,4 +37,4 @@ pip install -r requirements.txt
 python simulador/Simulador.py
 ```
 --- 
-[Captura de tela](Captura.png)
+![Captura de tela](Captura.png)
