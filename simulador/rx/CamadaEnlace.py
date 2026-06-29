@@ -1,60 +1,6 @@
 from Utils import *
 
 # === DESENQUADRAMENTO === #
-"""""
-def verificar_crc32(bits):
-    if len(bits) < 32:
-        return [], "[ERRO] Fluxo muito curto para conter CRC-32"
-        
-    bits_dados = bits[:-32]
-    bits_crc_recebido = bits[-32:]
-    
-    report_l = ["Verificação de CRC-32: "]
-    STEP = 8
-    report_str = ""
-    report_str_count = 0
-    
-    # Mostra os bytes de dados no relatório
-    for i in range(0, len(bits_dados), STEP):
-        janela = bits_dados[i:min(len(bits_dados), i + STEP)]
-        if report_str_count == 4:
-            report_l.append(report_str)
-            report_str = f"{bits_para_hexa(janela)} "
-            report_str_count = 1
-        else:
-            report_str_count += 1
-            report_str += f"{bits_para_hexa(janela)} "
-            
-    crc = 0xFFFFFFFF
-    for i in range(0, len(bits_dados), 8):
-        janela = bits_dados[i:i+8]
-        while len(janela) < 8:
-            janela.append(0)
-        byte_val = int("".join(map(str, janela)), 2)
-        
-        crc ^= byte_val
-        for _ in range(8):
-            if crc & 1:
-                crc = (crc >> 1) ^ 0xEDB88320
-            else:
-                crc >>= 1
-    crc_final = crc ^ 0xFFFFFFFF
-    
-    crc_recebido_val = int("".join(map(str, bits_crc_recebido)), 2)
-    
-    if crc_final == crc_recebido_val:
-        report_str += f"[OK CRC: {bits_para_hexa(bits_crc_recebido)}]"
-        report_l.append(report_str)
-        bits_o = bits_dados
-    else:
-        report_str += f"[ERRO CRC: REC {bits_para_hexa(bits_crc_recebido)} != EXP {crc_final:08X}h]"
-        report_l.append(report_str)
-        bits_o = [] 
-        
-    report = "\n".join(report_l)
-    return bits_o, report
-
-"""""
 from Utils import *
 
 def remover_hamming(bits: list[int]):
@@ -150,9 +96,51 @@ def obter_fn_erro(tipo_tratamento: str):
     detectadores = {
             "bit de paridade": verifica_paridade,
             "hamming": corrigir_hamming,
-            "checksum": verifica_checksum
+            "checksum": verifica_checksum,
+            "crc-32": verifica_crc32
             }
     return detectadores.get(tipo_tratamento.lower(), idle) 
+
+def verifica_crc32(bits: list[int]):
+    """Verifica o CRC-32 no RX"""
+    report = ["[Verificando CRC-32 RX]"]
+    
+    # crc nos ultimos 32 bits
+    if len(bits) < 32:
+        report.append("ERR: Quadro menor que 32 bits"
+        " impossível verificar CRC")
+        report.append("RETRANSMISSÃO NECESSÁRIA")
+        return [], report
+
+    # separando crc dos bits de dado
+    dados_bits = bits[:-32]
+    crc_recebido_bits = bits[-32:]
+    
+    # recalcula o crc par comparar com o recebido 
+    crc = 0xFFFFFFFF
+    for janela in slice_list(dados_bits, 8):
+        byte_val = bits_to_int(janela)
+        
+        crc ^= byte_val
+        for _ in range(8):
+            if crc & 1:
+                crc = (crc >> 1) ^ 0xEDB88320 
+            else:
+                crc >>= 1
+                
+    crc_recalculado = crc ^ 0xFFFFFFFF
+    crc_recebido_int = bits_to_int(crc_recebido_bits)
+
+    if crc_recalculado != crc_recebido_int:
+        report.append(f"ERR: CRC recalculado (0x{crc_recalculado:08x}) "
+                      f"difere do recebido (0x{crc_recebido_int:08x})")
+        report.append("RETRANSMISSÃO NECESSÁRIA")
+        return [], report
+
+    report.append("CRC-32 OK")
+    report.append(f"Res: {bits_to_str(dados_bits)}") 
+
+    return dados_bits, report
 
 def desenquadrador(enquadramento: str, max_bytes_quadro: int, 
                    tipo_tratamento_erro: str):

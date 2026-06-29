@@ -6,55 +6,6 @@ from Utils import *
 Implementação dos serviços da camada da camada de 
 enlace
 """
-""""
-# === 1/3 Protocolos de enquadramento === #
-
-def aplicar_crc32(bits):
-    bits_o = bits.copy()
-    report_l = ["Aplicação de CRC-32: "]
-    
-    # agrupar em bytes
-    STEP = 8
-    report_str = ""
-    report_str_count = 0
-    for i in range(0, len(bits), STEP):
-        janela = bits[i:min(len(bits), i + STEP)]
-        if report_str_count == 4:
-            report_l.append(report_str)
-            report_str = f"{bits_para_hexa(janela)} "
-            report_str_count = 1
-        else:
-            report_str_count += 1
-            report_str += f"{bits_para_hexa(janela)} "
-
-    # usando inteiros
-    crc = 0xFFFFFFFF
-    for i in range(0, len(bits), 8):
-        janela = bits[i:i+8]
-        while len(janela) < 8:
-            janela.append(0)
-        byte_val = int("".join(map(str, janela)), 2)
-        
-        crc ^= byte_val
-        for _ in range(8):
-            if crc & 1:
-                crc = (crc >> 1) ^ 0xEDB88320 
-            else:
-                crc >>= 1
-                
-    crc_final = crc ^ 0xFFFFFFFF
-    
-    crc_bits = [int(b) for b in f"{crc_final:032b}"]
-    
-    bits_o.extend(crc_bits)
-    
-    report_str += f"[CRC: {bits_para_hexa(crc_bits)}]"
-    report_l.append(report_str)
-    report = "\n".join(report_l)
-    
-    return bits_o, report
-
-"""""
 
 from Utils import *
 
@@ -127,11 +78,52 @@ def obter_fn_erro(tipo_tratamento: str):
         
         return dado, report
     
+    def aplicar_crc32(bits: list[int]):
+        """Calcula CRC-32 e retorna bits com o CRC no final"""
+        bits_o = bits.copy()
+        report = ["Aplicação de CRC-32: "]
+        
+        # agrupar em bytes para o relatório
+        report_str = ""
+        report_str_count = 0
+        for janela in slice_list(bits, 8):
+            if report_str_count == 4:
+                report.append(report_str)
+                report_str = f"{bits_to_str(janela)} "
+                report_str_count = 1
+            else:
+                report_str_count += 1
+                report_str += f"{bits_to_str(janela)} "
+
+        # cálculo do CRC-32
+        crc = 0xFFFFFFFF
+        for janela in slice_list(bits, 8):
+            byte_val = bits_to_int(janela) 
+            
+            crc ^= byte_val
+            for _ in range(8):
+                if crc & 1:
+                    crc = (crc >> 1) ^ 0xEDB88320 
+                else:
+                    crc >>= 1
+                    
+        crc_final = crc ^ 0xFFFFFFFF
+        
+        # preenchimento de 32b 
+        crc_bits = [int(b) for b in f"{crc_final:032b}"]
+        
+        bits_o.extend(crc_bits)
+        
+        report_str += f"[CRC: {bits_to_str(crc_bits)}]"
+        report.append(report_str)
+    
+        return bits_o, report   
 
     funcoes_erro = {
             "bit de paridade": bit_paridade,
             "hamming": aplicar_hamming, 
-            "checksum": aplicar_checksum
+            "checksum": aplicar_checksum,
+            "crc-32": aplicar_crc32
             }
     
     return funcoes_erro.get(tipo_tratamento.lower(), fn_deteccao_idle)
